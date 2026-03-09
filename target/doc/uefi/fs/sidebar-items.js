@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CHARACTER_DENY_LIST","COMMON_SKIP_DIRS","SEPARATOR","SEPARATOR_STR"],"enum":["Error","IoErrorContext","PathError"],"struct":["Components","FileSystem","IoError","Path","PathBuf","UefiDirectoryIter"],"type":["FileSystemResult"]};

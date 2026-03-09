@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ConfigHdrSection","ParseError"],"struct":["ConfigurationString","ConfigurationStringElement","ConfigurationStringIter","MultiConfigurationStringIter"]};

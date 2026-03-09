@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"attr":["unsafe_protocol"],"enum":["BootPolicy"],"mod":["acpi","ata","console","debug","device_path","driver","hii","loaded_image","media","misc","network","nvme","pci","pi","rng","scsi","security","shell","shell_params","shim","string","tcg","usb"],"trait":["Protocol","ProtocolPointer"]};

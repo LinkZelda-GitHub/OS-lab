@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["FromSliceWithNulError","FromStrError","FromStrWithBufError","UnalignedCStr16Error"],"mod":["chars"],"struct":["CStr16","CStr8","CString16","Event","Guid","Handle","PoolString","UnalignedSlice"],"trait":["Align","EqStrUntilNul","Identify"],"type":["PhysicalAddress","VirtualAddress"]};

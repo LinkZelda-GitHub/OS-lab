@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["config","config_routing","config_str","database"]};

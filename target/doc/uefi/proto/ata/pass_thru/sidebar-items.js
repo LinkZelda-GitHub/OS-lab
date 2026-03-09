@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":["AtaDevice","AtaDeviceIterator","AtaPassThru"],"type":["AtaPassThruMode"]};

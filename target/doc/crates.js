@@ -1,0 +1,2 @@
+window.ALL_CRATES = ["bit_field","bitflags","cfg_if","log","proc_macro2","ptr_meta","ptr_meta_derive","quote","syn","ucs2","uefi","uefi_macros","uefi_raw","uguid","unicode_ident","ysos_boot"];
+//{"start":21,"fragment_lengths":[11,11,9,6,14,11,18,8,6,7,7,14,11,8,16,12]}

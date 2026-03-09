@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["http","ip4config2","pxe","snp"],"struct":["EfiMacAddr"]};
