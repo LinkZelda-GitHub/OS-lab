@@ -8,6 +8,7 @@ pub fn init() {
     init_SERIAL(SerialPort::new(SERIAL_IO_PORT));
     get_serial_for_sure().init();
 
+    println!("\x1b[2J\x1b[H"); // 使用 escape sequence 清空
     println!("{}", crate::get_ascii_header());
     println!("[+] Serial Initialized.");
 }

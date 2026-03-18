@@ -2,7 +2,6 @@
 #![feature(abi_x86_interrupt)]
 #![feature(type_alias_impl_trait)]
 
-extern crate alloc;
 #[macro_use]
 extern crate log;
 extern crate libm;
@@ -13,10 +12,8 @@ pub use utils::*;
 
 mod drivers;
 
-pub use alloc::format;
-
 use boot::BootInfo;
-use uefi::{runtime::ResetType, Status};
+use uefi::{Status, runtime::ResetType};
 
 pub fn init(boot_info: &'static BootInfo) {
     unsafe {
@@ -25,7 +22,7 @@ pub fn init(boot_info: &'static BootInfo) {
     }
 
     drivers::serial::init(); // init serial output
-    logger::init(); // init logger system
+    logger::init(boot_info.log_lever); // init logger system
 
     info!("YatSenOS initialized.");
 }

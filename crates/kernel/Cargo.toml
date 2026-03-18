@@ -11,6 +11,6 @@ libm     = { workspace = true }
 log      = { workspace = true }
 paste    = { workspace = true }
 spin     = { workspace = true }
-uefi     = { workspace = true }
+uefi     = { workspace = true, features = ["global_allocator"] }
 x86      = { workspace = true }
 x86_64   = { workspace = true }

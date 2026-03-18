@@ -9,7 +9,8 @@ pub struct Config<'a> {
     pub kernel_stack_auto_grow: u64,
     /// The size of the kernel stack, given in number of 4KiB pages
     pub kernel_stack_size: u64,
-    /// The offset into the virtual address space where the physical memory is mapped
+    /// The offset into the virtual address space where the physical memory is
+    /// mapped
     pub physical_memory_offset: u64,
     /// The path of kernel ELF
     pub kernel_path: &'a str,
@@ -17,6 +18,8 @@ pub struct Config<'a> {
     pub cmdline: &'a str,
     /// Load apps into memory, when no fs implemented in kernel
     pub load_apps: bool,
+    /// Only the log level that is greater or equal to log_level can be output
+    pub log_level: &'a str,
 }
 
 const DEFAULT_CONFIG: Config = Config {
@@ -27,6 +30,7 @@ const DEFAULT_CONFIG: Config = Config {
     kernel_path: "\\KERNEL.ELF",
     cmdline: "",
     load_apps: false,
+    log_level: "Info"
 };
 
 impl<'a> Config<'a> {
@@ -65,6 +69,7 @@ impl<'a> Config<'a> {
             "kernel_stack_auto_grow" => self.kernel_stack_auto_grow = r10,
             "cmdline" => self.cmdline = value,
             "load_apps" => self.load_apps = r10 != 0,
+            "log_level" => self.log_level = value,
             _ => warn!("undefined config key: {}", key),
         }
     }
