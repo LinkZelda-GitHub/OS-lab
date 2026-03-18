@@ -38,7 +38,7 @@ fn efi_main() -> Status {
 
     info!("Config: {:#x?}", config);
 
-    /// 2. Load ELF files
+    // 2. Load ELF files
     let elf = { 
         let mut file = open_file(config.kernel_path);
         let buf = load_file(&mut file);
