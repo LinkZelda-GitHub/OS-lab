@@ -39,7 +39,7 @@ pub fn init(boot_info: &'static BootInfo) {
     }
 
     serial::init(); // init serial output
-    logger::init(); // init logger system
+    logger::init("Info"); // init logger system
     memory::address::init(boot_info);
     memory::gdt::init(); // init gdt
     memory::allocator::init(); // init kernel heap allocator

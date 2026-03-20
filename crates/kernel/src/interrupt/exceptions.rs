@@ -1,6 +1,7 @@
 use x86_64::{
     registers::control::Cr2,
     structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode},
+    VirtAddr,
 };
 
 use crate::memory::*;

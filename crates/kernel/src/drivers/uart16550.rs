@@ -92,6 +92,11 @@ impl SerialPort {
         unsafe {
             Port::new(base + MCR).write(0x0Fu8);
         }
+
+        // 打开所有中断（IER 寄存器写 1）
+        unsafe {
+            Port::new(base + IER).write(0x01u8);
+        }
     }
 
     /// 判断发送保持寄存器是否为空
