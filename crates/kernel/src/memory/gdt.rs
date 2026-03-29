@@ -12,6 +12,8 @@ use x86_64::{
 
 pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 pub const PAGE_FAULT_IST_INDEX: u16 = 1;
+// pub const DIVIDE_ERROR_IST_INDEX: u16 = 2;
+
 
 pub const IST_SIZES: [usize; 3] = [0x1000, 0x1000, 0x1000];
 

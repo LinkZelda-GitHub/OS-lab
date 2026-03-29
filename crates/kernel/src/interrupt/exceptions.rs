@@ -69,12 +69,17 @@ pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
     idt.security_exception
         .set_handler_fn(security_exception_handler);
     
+    // idt.triple_fault.set_handler_fn(triple_fault_handler);
+
     // TODO: you should handle more exceptions here
     // especially general protection fault (GPF)
     // see: https://wiki.osdev.org/Exceptions
 }
 
 pub extern "x86-interrupt" fn divide_error_handler(stack_frame: InterruptStackFrame) {
+    // let rsp: u64;
+    // unsafe { core::arch::asm!("mov {}, rsp", out(reg) rsp); }
+    // info!("Divide Error RSP: {:#x}", rsp);
     panic!("EXCEPTION: DIVIDE ERROR\n\n{:#?}", stack_frame);
 }
 
@@ -82,6 +87,9 @@ pub extern "x86-interrupt" fn double_fault_handler(
     stack_frame: InterruptStackFrame,
     error_code: u64,
 ) -> ! {
+    // let rsp: u64;
+    // unsafe { core::arch::asm!("mov {}, rsp", out(reg) rsp); }
+    // info!("Double Fault RSP: {:#x}", rsp);
     panic!(
         "EXCEPTION: DOUBLE FAULT, ERROR_CODE: 0x{:016x}\n\n{:#?}",
         error_code, stack_frame

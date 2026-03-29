@@ -44,7 +44,7 @@ intdbg:
 		$(QEMU_OUTPUT) \
 		-drive format=raw,file=fat:${ESP} \
 		-snapshot \
-		-no-reboot -d int,cpu_reset
+		-no-reboot -d int,cpu_reset -D qemu.log
 
 debug:
 	@qemu-system-x86_64 \

@@ -17,7 +17,7 @@ pub extern "x86-interrupt" fn serial_handler(_st: InterruptStackFrame) {
 /// Receive character from uart 16550
 /// Should be called on every interrupt
 fn receive() {
-    // FIXME: receive character from uart 16550, put it into INPUT_BUFFER
+    // FIXED: receive character from uart 16550, put it into INPUT_BUFFER
     let mut serial_port = uart16550::SerialPort::new(0x3F8); // COM1 基地址
     if let Some(byte) = serial_port.receive() {
         push_key(byte);
