@@ -1,8 +1,16 @@
 #[macro_use]
 mod macros;
+#[macro_use]
+mod regs;
 
+pub mod clock;
+pub mod func;
 pub mod logger;
+
 pub use macros::*;
+pub use regs::*;
+
+use crate::proc::*;
 
 pub const fn get_ascii_header() -> &'static str {
     concat!(
@@ -18,6 +26,41 @@ __  __      __  _____            ____  _____
     )
 }
 
+pub fn new_test_thread(id: &str) -> ProcessId {
+    let proc_data = ProcessData::new();
+    proc_data.set_env("id", id);
+
+    spawn_kernel_thread(
+        utils::func::test,
+        format!("#{}_test", id),
+        Some(proc_data),
+    )
+}
+
+pub fn new_stack_test_thread() {
+    let pid = spawn_kernel_thread(
+        utils::func::stack_test,
+        alloc::string::String::from("stack"),
+        None,
+    );
+
+    // wait for progress exit
+    wait(pid);
+}
+
+fn wait(pid: ProcessId) {
+    loop {
+        // FIXME: try to get the status of the process
+
+        // HINT: it's better to use the exit code
+
+        if /* FIXME: is the process exited? */ {
+            x86_64::instructions::hlt();
+        } else {
+            break;
+        }
+    }
+}
 
 const SHORT_UNITS: [&str; 4] = ["B", "K", "M", "G"];
 const UNITS: [&str; 4] = ["B", "KiB", "MiB", "GiB"];
