@@ -1,11 +1,15 @@
 use core::sync::atomic::{AtomicU16, Ordering};
 
+static PID_COUNTER: AtomicU16 = AtomicU16::new(1);
+
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ProcessId(pub u16);
 
 impl ProcessId {
     pub fn new() -> Self {
-        // FIXME: Get a unique PID
+        // FIXED: Get a unique PID
+        let pid = PID_COUNTER.fetch_add(1, Ordering::Relaxed);
+        Self(pid)
     }
 }
 

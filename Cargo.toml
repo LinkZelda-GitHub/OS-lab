@@ -29,6 +29,7 @@ uefi                  = { version = "0.36", default-features = false }
 x86                   = "0.52"
 x86_64                = "0.15"
 xmas-elf              = "0.10"
+volatile              = "0.4"  
 
 # Local dependencies
 

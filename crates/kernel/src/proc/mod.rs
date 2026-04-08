@@ -5,6 +5,7 @@ mod paging;
 mod pid;
 mod process;
 mod processor;
+mod vm;
 
 use alloc::string::String;
 
@@ -15,9 +16,12 @@ pub use paging::PageTableContext;
 pub use pid::ProcessId;
 use process::*;
 use x86_64::{VirtAddr, structures::idt::PageFaultErrorCode};
+use crate::alloc::string::ToString;
 
 use crate::memory::PAGE_SIZE;
 pub const KERNEL_PID: ProcessId = ProcessId(1);
+
+use vm::ProcessVm;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ProgramStatus {
@@ -33,8 +37,20 @@ pub fn init() {
 
     trace!("Init kernel vm: {:#?}", proc_vm);
 
+    let mut kdata = ProcessData::new();
+    kdata.set_env("PAGE_SIZE", &PAGE_SIZE.to_string());
+    kdata.set_env("KERNEL_HEAP_SIZE", &crate::memory::allocator::HEAP_SIZE.to_string());
+    kdata.set_env("KERNEL_PID", "1");
+
     // kernel process
-    let kproc = { /* FIXME: create kernel process */ };
+    /* FIXED: create kernel process */
+    let kproc = Process::new(
+        "kernel".into(),
+        None,
+        Some(proc_vm),
+        Some(kdata),
+    );
+
     manager::init(kproc);
 
     info!("Process Manager Initialized.");
@@ -42,11 +58,20 @@ pub fn init() {
 
 pub fn switch(context: &mut ProcessContext) {
     x86_64::instructions::interrupts::without_interrupts(|| {
-        // FIXME: switch to the next process
+        // FIXED: switch to the next process
+        let manager = get_process_manager();
         //      - save current process's context
+        manager.save_current(context);
         //      - handle ready queue update
         //      - restore next process's context
+        manager.switch_next(context);
     });
+}
+
+pub fn get_process_exit_code(pid: ProcessId) -> Option<isize> {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        get_process_manager().get_exit_code(&pid)
+    })
 }
 
 pub fn spawn_kernel_thread(entry: fn() -> !, name: String, data: Option<ProcessData>) -> ProcessId {
@@ -64,7 +89,8 @@ pub fn print_process_list() {
 
 pub fn env(key: &str) -> Option<String> {
     x86_64::instructions::interrupts::without_interrupts(|| {
-        // FIXME: get current process's environment variable
+        // FIXED: get current process's environment variable
+        get_process_manager().current().read().env(key)
     })
 }
 

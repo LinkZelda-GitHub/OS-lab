@@ -31,6 +31,19 @@ impl ProcessVm {
         }
     }
 
+    #[inline]
+    pub fn clone_page_table(&self) -> PageTableContext {
+        // self.page_table.clone()
+        PageTableContext::new()
+    }
+
+    pub fn alloc_init_stack(&mut self, pid: ProcessId) -> VirtAddr {
+        let mut mapper = self.page_table.mapper();
+        let stack_top_addr = self.stack.alloc_init_stack(pid, &mut mapper);
+        stack_top_addr
+    }
+
+
     pub fn init_kernel_vm(mut self) -> Self {
         // TODO: record kernel code usage
         self.stack = Stack::kstack();
@@ -38,9 +51,9 @@ impl ProcessVm {
     }
 
     pub fn init_proc_stack(&mut self, pid: ProcessId) -> VirtAddr {
-        // FIXME: calculate the stack for pid
-        // FIXME: calculate the stack for pid
-        stack_top_addr
+        // FIXED: calculate the stack for pid
+        // FIXED: calculate the stack for pid
+        self.alloc_init_stack(pid)
     }
 
     pub fn handle_page_fault(&mut self, addr: VirtAddr) -> bool {

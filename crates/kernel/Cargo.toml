@@ -21,3 +21,4 @@ uefi                  = { workspace = true }
 volatile              = { workspace = true }
 x86                   = { workspace = true }
 x86_64                = { workspace = true }
+elf                   = { workspace = true }

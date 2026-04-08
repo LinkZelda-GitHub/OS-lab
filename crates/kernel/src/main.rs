@@ -3,6 +3,7 @@
 
 use ysos::*;
 use ysos_kernel as ysos;
+use log::info;
 
 extern crate alloc;
 
@@ -21,6 +22,7 @@ pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
 
     loop {
         print!("[>] ");
+        // log::info!("OvO");
         let line = input::get_line();
         match line.trim() {
             "exit" => break,

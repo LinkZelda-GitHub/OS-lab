@@ -3,13 +3,15 @@ mod macros;
 #[macro_use]
 mod regs;
 
-pub mod clock;
+// pub mod clock;
 pub mod func;
 pub mod logger;
 
 pub use macros::*;
 pub use regs::*;
 
+use alloc::format;
+use x86::vmx::vmcs::ro::EXIT_QUALIFICATION;
 use crate::proc::*;
 
 pub const fn get_ascii_header() -> &'static str {
@@ -27,11 +29,11 @@ __  __      __  _____            ____  _____
 }
 
 pub fn new_test_thread(id: &str) -> ProcessId {
-    let proc_data = ProcessData::new();
+    let mut proc_data = ProcessData::new();
     proc_data.set_env("id", id);
 
     spawn_kernel_thread(
-        utils::func::test,
+        func::test,
         format!("#{}_test", id),
         Some(proc_data),
     )
@@ -39,22 +41,24 @@ pub fn new_test_thread(id: &str) -> ProcessId {
 
 pub fn new_stack_test_thread() {
     let pid = spawn_kernel_thread(
-        utils::func::stack_test,
+        func::stack_test,
         alloc::string::String::from("stack"),
         None,
     );
 
     // wait for progress exit
-    wait(pid);
+    wait(pid); //TODO: enable after wait() is implemented 
 }
 
 fn wait(pid: ProcessId) {
     loop {
-        // FIXME: try to get the status of the process
+        // FIXED: try to get the status of the process
+        let exit_code = crate::proc::get_process_exit_code(pid);
+
 
         // HINT: it's better to use the exit code
 
-        if /* FIXME: is the process exited? */ {
+        if exit_code.is_none() {
             x86_64::instructions::hlt();
         } else {
             break;

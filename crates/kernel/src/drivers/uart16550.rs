@@ -70,7 +70,8 @@ impl SerialPort {
 
         // 启用 FIFO，清除 FIFO，设置 14 字节阈值
         unsafe {
-            Port::new(base + FCR).write(0xC7u8);
+            // Port::new(base + FCR).write(0xC7u8);
+            Port::new(base + FCR).write(0x07u8);
         }
 
         // 先设置 MODEM 控制寄存器为 0x0B，再设为 0x1E 进入回环模式
@@ -104,7 +105,7 @@ impl SerialPort {
         let base = self.base;
 
         let lsr: u8 = unsafe { Port::new(base + LSR).read() };
-        (lsr & 0x20) == 0
+        (lsr & 0x20) != 0
     }
 
     /// Sends a byte on the serial port.
@@ -112,8 +113,15 @@ impl SerialPort {
         // FIXED: Send a byte on the serial port
         let base = self.base;
         // 等待发送保持寄存器为空
-        while self.is_transmit_empty() {
+
+        let mut timeout = 0xFFFFF; // 超时计数器，防止死循环
+
+        while !self.is_transmit_empty() {
             core::hint::spin_loop();
+            timeout -= 1;
+            if timeout == 0 {
+                panic!("Timeout while waiting for transmit buffer to be empty");
+            }
         }
         // 写入数据寄存器
         unsafe { Port::new(base + DATA).write(data); }

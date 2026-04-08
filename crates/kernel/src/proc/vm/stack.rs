@@ -3,7 +3,12 @@ use x86_64::{
     structures::paging::{Page, mapper::MapToError, page::*},
 };
 
+use elf::map_range;
+
+use crate::{memory::get_frame_alloc_for_sure, proc::pid};
+
 use super::{FrameAllocatorRef, MapperRef};
+use crate::proc::ProcessId;
 
 // 0xffff_ff00_0000_0000 is the kernel's address space
 pub const STACK_MAX: u64 = 0x4000_0000_0000;
@@ -25,7 +30,7 @@ const STACK_INIT_TOP_PAGE: Page<Size4KiB> = Page::containing_address(VirtAddr::n
 // kernel stack
 pub const KSTACK_MAX: u64 = 0xffff_ff02_0000_0000;
 pub const KSTACK_DEF_BOT: u64 = KSTACK_MAX - STACK_MAX_SIZE;
-pub const KSTACK_DEF_PAGE: u64 = /* FIXME: decide on the boot config */;
+pub const KSTACK_DEF_PAGE: u64 = 512;
 pub const KSTACK_DEF_SIZE: u64 = KSTACK_DEF_PAGE * crate::memory::PAGE_SIZE;
 
 pub const KSTACK_INIT_BOT: u64 = KSTACK_MAX - KSTACK_DEF_SIZE;
@@ -65,8 +70,21 @@ impl Stack {
     pub fn init(&mut self, mapper: MapperRef, alloc: FrameAllocatorRef) {
         debug_assert!(self.usage == 0, "Stack is not empty.");
 
-        self.range = elf::map_range(STACK_INIT_BOT, STACK_DEF_PAGE, mapper, alloc).unwrap();
+        self.range = map_range(STACK_INIT_BOT, STACK_DEF_PAGE, mapper, alloc).unwrap();
         self.usage = STACK_DEF_PAGE;
+    }
+
+    pub fn alloc_init_stack(&mut self, pid: ProcessId, mapper: MapperRef) -> VirtAddr {
+        let alloc = &mut *get_frame_alloc_for_sure();
+
+        let pid_offset = (pid.0 as u64 - 1) * STACK_MAX_SIZE;
+        let stack_bot = STACK_INIT_BOT - pid_offset;
+        let stack_top = STACK_INIT_TOP - pid_offset;
+
+        self.range = map_range(stack_bot, STACK_DEF_PAGE, mapper, alloc)
+            .expect("Failed to map stack");
+
+        VirtAddr::new(stack_top)
     }
 
     pub fn handle_page_fault(

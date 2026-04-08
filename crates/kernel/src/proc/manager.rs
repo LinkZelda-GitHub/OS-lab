@@ -1,21 +1,29 @@
-use alloc::{collections::*, format};
+use alloc::{collections::*, ffi::IntoStringError, format};
 
 use hashbrown::HashMap;
 use spin::{Mutex, RwLock};
+use alloc::sync::Arc;
+use uefi::proto::pi;
+use x86_64::structures::paging::page;
 
 use super::*;
-use crate::memory::{
+use crate::{memory::{
     self, PAGE_SIZE,
     allocator::{ALLOCATOR, HEAP_SIZE},
     get_frame_alloc_for_sure,
-};
+}, proc};
 
 pub static PROCESS_MANAGER: spin::Once<ProcessManager> = spin::Once::new();
 
 pub fn init(init: Arc<Process>) {
-    // FIXME: set init process as Running
+    // FIXED: set init process as Running
+    {
+        let mut init_inner = init.write();
+        init_inner.resume();
+    } // drop the lock before setting processor's pid
 
-    // FIXME: set processor's current pid to init's pid
+    // FIXED: set processor's current pid to init's pid
+    processor::set_pid(init.pid());
 
     PROCESS_MANAGER.call_once(|| ProcessManager::new(init));
 }
@@ -67,23 +75,67 @@ impl ProcessManager {
     }
 
     pub fn save_current(&self, context: &ProcessContext) {
-        // FIXME: update current process's tick count
+        let proc = self.current();
+        let pid = proc.pid();
 
-        // FIXME: save current process's context
+        let mut proc_inner = proc.write();
+        let was_dead = proc_inner.status() == ProgramStatus::Dead;
+        // FIXED: update current process's tick count
+        proc_inner.tick();
+        // FIXED: save current process's context
+        proc_inner.save(context);
+
+        // drop(proc_inner);
+
+        if !was_dead {
+            proc_inner.pause();
+
+            drop(proc_inner);
+
+            self.push_ready(pid);
+        }
+
     }
 
     pub fn switch_next(&self, context: &mut ProcessContext) -> ProcessId {
 
-        // FIXME: fetch the next process from ready queue
+        loop {
+            // FIXED: fetch the next process from ready queue
+            let next_pid = {
+                let mut ready_queue = self.ready_queue.lock();
+                ready_queue.pop_front().unwrap_or(KERNEL_PID)
+            };
 
-        // FIXME: check if the next process is ready,
-        //        continue to fetch if not ready
+            // FIXED: check if the next process is ready,
+            //        continue to fetch if not ready
+            let Some(next_proc) = self.get_proc(&next_pid) else {
+                continue;
+            };
 
-        // FIXME: restore next process's context
+            // FIXED: restore next process's context
+            let mut next_inner = next_proc.write();
+            if !next_inner.is_ready() && next_pid != KERNEL_PID {
+                continue;
+            }
 
-        // FIXME: update processor's current pid
+            next_inner.resume();
 
-        // FIXME: return next process's pid
+            next_inner.restore(context);
+
+            let page_table = next_inner.clone_page_table();
+    
+            drop(next_inner);
+
+            unsafe {
+                page_table.load();
+            }
+
+            // FIXED: update processor's current pid
+            processor::set_pid(next_pid);
+
+            // FIXED: return next process's pid
+            return next_pid;
+        }
     }
 
     pub fn spawn_kernel_thread(
@@ -97,26 +149,46 @@ impl ProcessManager {
         let proc_vm = Some(ProcessVm::new(page_table));
         let proc = Process::new(name, Some(Arc::downgrade(&kproc)), proc_vm, proc_data);
 
+        let pid = proc.pid();
+
         // alloc stack for the new process base on pid
         let stack_top = proc.alloc_init_stack();
 
-        // FIXME: set the stack frame
+        // FIXED: set the stack frame
+        proc.write().init_stack_frame(entry, stack_top);
 
-        // FIXME: add to process map
+        // FIXED: add to process map
+        self.add_proc(pid, proc);
 
-        // FIXME: push to ready queue
+        // FIXED: push to ready queue
+        self.push_ready(pid);
 
-        // FIXME: return new process pid
+        // FIXED: return new process pid
+        pid
     }
 
     pub fn kill_current(&self, ret: isize) {
         self.kill(processor::get_pid(), ret);
     }
 
-    pub fn handle_page_fault(&self, addr: VirtAddr, err_code: PageFaultErrorCode) -> bool {
-        // FIXME: handle page fault
+    pub fn get_exit_code(&self, pid: &ProcessId) -> Option<isize> {
+       let proc = self.get_proc(pid)?;
+       let inner = proc.read();
+       if inner.status() == ProgramStatus::Dead {
+           return inner.exit_code();
+       } else {
+           return None;
+       }
+    }
 
-        false
+    pub fn handle_page_fault(&self, addr: VirtAddr, err_code: PageFaultErrorCode) -> bool {
+        // FIXED: handle page fault
+        if err_code.contains(PageFaultErrorCode::PROTECTION_VIOLATION) {
+            warn!("Page fault at {:#x} with protection violation.", addr.as_u64());
+            return false;
+        }
+
+        self.current().write().handle_page_fault(addr)
     }
 
     pub fn kill(&self, pid: ProcessId, ret: isize) {

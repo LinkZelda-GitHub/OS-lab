@@ -18,9 +18,7 @@ lazy_static! {
 /// 将接收到的字符放入输入缓冲区（由中断处理程序调用）
 #[inline]
 pub fn push_key(key: Key) {
-    if INPUT_BUF.push(key).is_err() {
-        warn!("Input buffer is full. Dropping key '{:?}'", key);
-    }
+    let _ = INPUT_BUF.push(key);
 }
 
 /// 非阻塞地从缓冲区取出一个字符
@@ -32,17 +30,26 @@ pub fn try_pop_key() -> Option<Key> {
 /// 阻塞地从缓冲区取出一个字符（循环等待直到有数据）
 pub fn pop_key() -> Key {
     loop {
+        x86_64::instructions::interrupts::disable();
+
         if let Some(key) = try_pop_key() {
+            x86_64::instructions::interrupts::enable();
             return key;
         }
+        // 如果没有字符，让 CPU 休眠，直到下一次任意硬件中断唤醒它
+        x86_64::instructions::interrupts::enable_and_hlt();
     }
 }
 
 /// 阻塞地读取一行输入，并实时回显，支持退格删除。
 /// 遇到换行符 `\n` 或回车符 `\r` 时结束，返回用户输入的字符串（不含换行符）。
 pub fn get_line() -> String {
+    // log::info!("Waiting for user input:: 1");
     let mut serial_port = SerialPort::new(0x3F8); // COM1 基地址
+    // log::info!("Waiting for user input:: 2");
     let mut line = String::with_capacity(128);
+    // log::info!("Waiting for user input:: 3");
+    
     loop {
         let ch = pop_key();
         match ch {

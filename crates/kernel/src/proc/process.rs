@@ -1,12 +1,13 @@
-use alloc::{sync::Weak, vec::Vec};
+use alloc::{slice, sync::Weak, vec::Vec};
 
 use spin::*;
 use x86_64::structures::paging::{mapper::MapToError, page::PageRange, *};
 
 use super::*;
 use crate::memory::*;
+use alloc::sync::Arc;
 
-#[derive(Clone)]
+// #[derive(Clone)]
 pub struct Process {
     pid: ProcessId,
     inner: RwLock<ProcessInner>,
@@ -117,7 +118,16 @@ impl ProcessInner {
     }
 
     pub fn clone_page_table(&self) -> PageTableContext {
-        self.proc_vm.as_ref().unwrap()
+        // self.proc_vm.as_ref().unwrap()
+        self.proc_vm
+            .as_ref()
+            .expect("process vm not initialized")
+            .clone_page_table()
+    }
+
+    #[inline]
+    pub fn init_stack_frame(&mut self, entry: VirtAddr, stack_top: VirtAddr) {
+        self.context.init_stack_frame(entry, stack_top);
     }
 
     pub fn is_ready(&self) -> bool {
@@ -139,15 +149,22 @@ impl ProcessInner {
     /// Save the process's context
     /// mark the process as ready
     pub(super) fn save(&mut self, context: &ProcessContext) {
-        // FIXME: save the process's context
+        // FIXED: save the process's context
+        self.context.save(context);
+        if self.status != ProgramStatus::Dead {
+            self.pause();
+        }
     }
 
     /// Restore the process's context
     /// mark the process as running
     pub(super) fn restore(&mut self, context: &mut ProcessContext) {
-        // FIXME: restore the process's context
+        // FIXED: restore the process's context
+        self.context.restore(context);
+        self.resume();
 
-        // FIXME: restore the process's page table
+        // FIXED: restore the process's page table
+        self.clone_page_table().load();
     }
 
     pub fn parent(&self) -> Option<Arc<Process>> {
@@ -155,11 +172,15 @@ impl ProcessInner {
     }
 
     pub fn kill(&mut self, ret: isize) {
-        // FIXME: set exit code
+        // FIXED: set exit code
+        self.exit_code = Some(ret);
 
-        // FIXME: set status to dead
+        // FIXED: set status to dead
+        self.status = ProgramStatus::Dead;
 
-        // FIXME: take and drop unused resources
+        // FIXED: take and drop unused resources
+        self.proc_data.take();
+        self.proc_vm.take();
     }
 }
 

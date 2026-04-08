@@ -2,7 +2,8 @@ use hashbrown::HashMap;
 use spin::RwLock;
 
 use super::*;
-use crate::resource::ResourceSet;
+// use crate::resource::ResourceSet;
+use alloc::sync::Arc;
 
 #[derive(Debug, Clone)]
 pub struct ProcessData {
