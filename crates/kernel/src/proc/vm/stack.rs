@@ -1,3 +1,4 @@
+use x86::current;
 use x86_64::{
     VirtAddr,
     structures::paging::{Page, mapper::MapToError, page::*},
@@ -121,7 +122,22 @@ impl Stack {
     ) -> Result<(), MapToError<Size4KiB>> {
         debug_assert!(self.is_on_stack(addr), "Address is not on stack.");
 
-        // FIXME: grow stack for page fault
+        // FIXED: grow stack for page fault
+
+        let fault_page = Page::containing_address(addr);
+        let current_start = self.range.start;
+
+        if fault_page >= current_start {
+            return Ok(());
+        }
+
+        let page_to_alloc = current_start - fault_page;
+        let start_addr = fault_page.start_address().as_u64();
+
+        map_range(start_addr, page_to_alloc, mapper, alloc)?;
+
+        self.range = Page::range(fault_page, self.range.end);
+        self.usage += page_to_alloc;
 
         Ok(())
     }

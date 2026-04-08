@@ -188,7 +188,11 @@ impl ProcessManager {
             return false;
         }
 
-        self.current().write().handle_page_fault(addr)
+        let pid = processor::get_pid();
+        if let Some(proc) = self.get_proc(&pid) {
+            return proc.write().handle_page_fault(addr);
+        }
+        false
     }
 
     pub fn kill(&self, pid: ProcessId, ret: isize) {
@@ -228,4 +232,5 @@ impl ProcessManager {
 
         print!("{}", output);
     }
+
 }
