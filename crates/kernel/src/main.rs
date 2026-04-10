@@ -13,12 +13,21 @@ pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
     ysos::init(boot_info);
 
     // FIXME: update lib.rs to pass following tests
-
+    let mut test_num = 0;
     // 1. run some (about 5) "test", show these threads are running concurrently
+    // ysos::new_test_thread(format!("{}", test_num).as_str());
+    // test_num += 1;
+    // ysos::new_test_thread(format!("{}", test_num).as_str());
+    // test_num += 1; 
+    // ysos::new_test_thread(format!("{}", test_num).as_str());
+    // test_num += 1;
+    // ysos::new_test_thread(format!("{}", test_num).as_str());
+    // test_num += 1;
+    // ysos::new_test_thread(format!("{}", test_num).as_str());
+    // test_num += 1;
 
     // 2. run "stack", create a huge stack, handle page fault properly
     
-    let mut test_num = 0;
 
     loop {
         print!("[>] ");

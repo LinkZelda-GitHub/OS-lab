@@ -4,7 +4,7 @@ mod manager;
 mod paging;
 mod pid;
 mod process;
-mod processor;
+pub mod processor;
 mod vm;
 
 use alloc::string::String;
@@ -16,9 +16,8 @@ pub use paging::PageTableContext;
 pub use pid::ProcessId;
 use process::*;
 use x86_64::{VirtAddr, structures::idt::PageFaultErrorCode};
-use crate::alloc::string::ToString;
 
-use crate::memory::PAGE_SIZE;
+use crate::{alloc::string::ToString, memory::PAGE_SIZE};
 pub const KERNEL_PID: ProcessId = ProcessId(1);
 
 use vm::ProcessVm;
@@ -39,17 +38,15 @@ pub fn init() {
 
     let mut kdata = ProcessData::new();
     kdata.set_env("PAGE_SIZE", &PAGE_SIZE.to_string());
-    kdata.set_env("KERNEL_HEAP_SIZE", &crate::memory::allocator::HEAP_SIZE.to_string());
+    kdata.set_env(
+        "KERNEL_HEAP_SIZE",
+        &crate::memory::allocator::HEAP_SIZE.to_string(),
+    );
     kdata.set_env("KERNEL_PID", "1");
 
     // kernel process
     /* FIXED: create kernel process */
-    let kproc = Process::new(
-        "kernel".into(),
-        None,
-        Some(proc_vm),
-        Some(kdata),
-    );
+    let kproc = Process::new("kernel".into(), None, Some(proc_vm), Some(kdata));
 
     manager::init(kproc);
 

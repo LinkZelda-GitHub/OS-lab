@@ -85,6 +85,8 @@ impl Stack {
         self.range = map_range(stack_bot, STACK_DEF_PAGE, mapper, alloc)
             .expect("Failed to map stack");
 
+        // log::info!("Stack of Process {} : 0x{:016x} ~ 0x{:016x}", pid, stack_bot, stack_top);
+
         VirtAddr::new(stack_top)
     }
 
@@ -138,6 +140,11 @@ impl Stack {
 
         self.range = Page::range(fault_page, self.range.end);
         self.usage += page_to_alloc;
+
+        // log::info!("PID {} Stack Expand! Fault Addr: {:#x}, Allocating {} pages", 
+        //    crate::proc::processor::get_pid().0, 
+        //    addr.as_u64(), 
+        //    page_to_alloc);
 
         Ok(())
     }

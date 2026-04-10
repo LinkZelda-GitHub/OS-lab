@@ -6,6 +6,7 @@ pub fn test() -> ! {
     } else {
         id = "unknown".into()
     }
+    // crate::proc::print_process_list();
     loop {
         // TODO: better way to show more than one process is running?
         count += 1;
@@ -36,5 +37,6 @@ fn huge_stack() {
 
 pub fn stack_test() -> ! {
     huge_stack();
+    crate::proc::print_process_list();
     crate::proc::process_exit(0)
 }

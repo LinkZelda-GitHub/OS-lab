@@ -47,7 +47,7 @@ pub fn new_stack_test_thread() {
     );
 
     // wait for progress exit
-    wait(pid); //TODO: enable after wait() is implemented 
+    wait(pid);
 }
 
 fn wait(pid: ProcessId) {

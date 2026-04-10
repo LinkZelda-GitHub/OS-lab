@@ -1,7 +1,8 @@
+use x86::current;
 use x86_64::{
+    VirtAddr,
     registers::control::Cr2,
     structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode},
-    VirtAddr,
 };
 
 use crate::memory::*;
@@ -31,8 +32,7 @@ pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
     idt.bound_range_exceeded
         .set_handler_fn(bound_range_exceeded_handler);
 
-    idt.invalid_opcode
-        .set_handler_fn(invalid_opcode_handler);
+    idt.invalid_opcode.set_handler_fn(invalid_opcode_handler);
 
     idt.device_not_available
         .set_handler_fn(device_not_available_handler);
@@ -45,10 +45,10 @@ pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
     idt.stack_segment_fault
         .set_handler_fn(stack_segment_fault_handler);
 
-    idt.x87_floating_point.set_handler_fn(x87_floating_point_handler);
+    idt.x87_floating_point
+        .set_handler_fn(x87_floating_point_handler);
 
-    idt.alignment_check
-        .set_handler_fn(alignment_check_handler);
+    idt.alignment_check.set_handler_fn(alignment_check_handler);
 
     idt.machine_check.set_handler_fn(machine_check_handler);
 
@@ -68,7 +68,7 @@ pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
 
     idt.security_exception
         .set_handler_fn(security_exception_handler);
-    
+
     // idt.triple_fault.set_handler_fn(triple_fault_handler);
 
     // TODO: you should handle more exceptions here
@@ -101,8 +101,8 @@ pub extern "x86-interrupt" fn double_fault_handler(
 //     err_code: PageFaultErrorCode,
 // ) {
 //     panic!(
-//         "EXCEPTION: PAGE FAULT, ERROR_CODE: {:?}\n\nTrying to access: {:#x}\n{:#?}",
-//         err_code,
+//         "EXCEPTION: PAGE FAULT, ERROR_CODE: {:?}\n\nTrying to access:
+// {:#x}\n{:#?}",         err_code,
 //         Cr2::read().unwrap_or(VirtAddr::new_truncate(0xdeadbeef)),
 //         stack_frame
 //     );
@@ -117,12 +117,17 @@ pub extern "x86-interrupt" fn page_fault_handler(
     let fault_addr = Cr2::read().unwrap();
 
     if !crate::proc::handle_page_fault(fault_addr, err_code) {
+        let current_pid = crate::proc::processor::get_pid();
+
         log::warn!(
-            "EXCEPTION: PAGE FAULT, ERROR_CODE: {:?}\n\nTrying to access: {:#x}\n{:#?}",
+            "EXCEPTION: PAGE FAULT, ERROR_CODE: {:?}\n\nTrying to access: {:#x}\nCaused by PID: \
+             {:?}\n{:#?}",
             err_code,
             fault_addr,
+            current_pid,
             stack_frame
         );
+
         panic!("Cannot handle page fault!");
     }
 }
@@ -165,24 +170,48 @@ pub extern "x86-interrupt" fn device_not_available_handler(stack_frame: Interrup
     panic!("EXCEPTION: DEVICE NOT AVAILABLE\n\n{:#?}", stack_frame);
 }
 
-pub extern "x86-interrupt" fn invalid_tss_handler(stack_frame: InterruptStackFrame, error_code: u64) {
-    panic!("EXCEPTION: INVALID TSS, ERROR_CODE: 0x{:016x}\n\n{:#?}", error_code, stack_frame);
+pub extern "x86-interrupt" fn invalid_tss_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: u64,
+) {
+    panic!(
+        "EXCEPTION: INVALID TSS, ERROR_CODE: 0x{:016x}\n\n{:#?}",
+        error_code, stack_frame
+    );
 }
 
-pub extern "x86-interrupt" fn segment_not_present_handler(stack_frame: InterruptStackFrame, error_code: u64) {
-    panic!("EXCEPTION: SEGMENT NOT PRESENT, ERROR_CODE: 0x{:016x}\n\n{:#?}", error_code, stack_frame);
+pub extern "x86-interrupt" fn segment_not_present_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: u64,
+) {
+    panic!(
+        "EXCEPTION: SEGMENT NOT PRESENT, ERROR_CODE: 0x{:016x}\n\n{:#?}",
+        error_code, stack_frame
+    );
 }
 
-pub extern "x86-interrupt" fn stack_segment_fault_handler(stack_frame: InterruptStackFrame, error_code: u64) {
-    panic!("EXCEPTION: STACK SEGMENT FAULT, ERROR_CODE: 0x{:016x}\n\n{:#?}", error_code, stack_frame);
+pub extern "x86-interrupt" fn stack_segment_fault_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: u64,
+) {
+    panic!(
+        "EXCEPTION: STACK SEGMENT FAULT, ERROR_CODE: 0x{:016x}\n\n{:#?}",
+        error_code, stack_frame
+    );
 }
 
 pub extern "x86-interrupt" fn x87_floating_point_handler(stack_frame: InterruptStackFrame) {
     panic!("EXCEPTION: x87 FLOATING POINT\n\n{:#?}", stack_frame);
 }
 
-pub extern "x86-interrupt" fn alignment_check_handler(stack_frame: InterruptStackFrame, error_code: u64) {
-    panic!("EXCEPTION: ALIGNMENT CHECK, ERROR_CODE: 0x{:016x}\n\n{:#?}", error_code, stack_frame);
+pub extern "x86-interrupt" fn alignment_check_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: u64,
+) {
+    panic!(
+        "EXCEPTION: ALIGNMENT CHECK, ERROR_CODE: 0x{:016x}\n\n{:#?}",
+        error_code, stack_frame
+    );
 }
 
 pub extern "x86-interrupt" fn machine_check_handler(stack_frame: InterruptStackFrame) -> ! {
@@ -197,20 +226,38 @@ pub extern "x86-interrupt" fn virtualization_handler(stack_frame: InterruptStack
     panic!("EXCEPTION: VIRTUALIZATION\n\n{:#?}", stack_frame);
 }
 
-pub extern "x86-interrupt" fn control_protection_handler(stack_frame: InterruptStackFrame, error_code: u64) {
-    panic!("EXCEPTION: CONTROL PROTECTION, ERROR_CODE: 0x{:016x}\n\n{:#?}", error_code, stack_frame);
+pub extern "x86-interrupt" fn control_protection_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: u64,
+) {
+    panic!(
+        "EXCEPTION: CONTROL PROTECTION, ERROR_CODE: 0x{:016x}\n\n{:#?}",
+        error_code, stack_frame
+    );
 }
 
 pub extern "x86-interrupt" fn hypervisor_injection_handler(stack_frame: InterruptStackFrame) {
     panic!("EXCEPTION: HYPERVISOR INJECTION\n\n{:#?}", stack_frame);
 }
 
-pub extern "x86-interrupt" fn vmm_communication_exception_handler(stack_frame: InterruptStackFrame, error_code: u64) {
-    panic!("EXCEPTION: VMM COMMUNICATION EXCEPTION, ERROR_CODE: 0x{:016x}\n\n{:#?}", error_code, stack_frame);
+pub extern "x86-interrupt" fn vmm_communication_exception_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: u64,
+) {
+    panic!(
+        "EXCEPTION: VMM COMMUNICATION EXCEPTION, ERROR_CODE: 0x{:016x}\n\n{:#?}",
+        error_code, stack_frame
+    );
 }
 
-pub extern "x86-interrupt" fn security_exception_handler(stack_frame: InterruptStackFrame, error_code: u64) {
-    panic!("EXCEPTION: SECURITY EXCEPTION, ERROR_CODE: 0x{:016x}\n\n{:#?}", error_code, stack_frame);
+pub extern "x86-interrupt" fn security_exception_handler(
+    stack_frame: InterruptStackFrame,
+    error_code: u64,
+) {
+    panic!(
+        "EXCEPTION: SECURITY EXCEPTION, ERROR_CODE: 0x{:016x}\n\n{:#?}",
+        error_code, stack_frame
+    );
 }
 
 pub extern "x86-interrupt" fn triple_fault_handler(stack_frame: InterruptStackFrame) -> ! {

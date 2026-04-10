@@ -1,17 +1,19 @@
-use alloc::{collections::*, ffi::IntoStringError, format};
+use alloc::{collections::*, ffi::IntoStringError, format, sync::Arc};
 
 use hashbrown::HashMap;
 use spin::{Mutex, RwLock};
-use alloc::sync::Arc;
 use uefi::proto::pi;
 use x86_64::structures::paging::page;
 
 use super::*;
-use crate::{memory::{
-    self, PAGE_SIZE,
-    allocator::{ALLOCATOR, HEAP_SIZE},
-    get_frame_alloc_for_sure,
-}, proc};
+use crate::{
+    memory::{
+        self, PAGE_SIZE,
+        allocator::{ALLOCATOR, HEAP_SIZE},
+        get_frame_alloc_for_sure,
+    },
+    proc,
+};
 
 pub static PROCESS_MANAGER: spin::Once<ProcessManager> = spin::Once::new();
 
@@ -88,17 +90,16 @@ impl ProcessManager {
         // drop(proc_inner);
 
         if !was_dead {
+            // 特判是不是 Dead 状态，Dead 状态不需要 push 回 ready_queue
             proc_inner.pause();
 
             drop(proc_inner);
 
             self.push_ready(pid);
         }
-
     }
 
     pub fn switch_next(&self, context: &mut ProcessContext) -> ProcessId {
-
         loop {
             // FIXED: fetch the next process from ready queue
             let next_pid = {
@@ -112,23 +113,15 @@ impl ProcessManager {
                 continue;
             };
 
-            // FIXED: restore next process's context
             let mut next_inner = next_proc.write();
             if !next_inner.is_ready() && next_pid != KERNEL_PID {
                 continue;
             }
 
-            next_inner.resume();
-
+            // FIXED: restore next process's context
             next_inner.restore(context);
 
-            let page_table = next_inner.clone_page_table();
-    
             drop(next_inner);
-
-            unsafe {
-                page_table.load();
-            }
 
             // FIXED: update processor's current pid
             processor::set_pid(next_pid);
@@ -172,19 +165,22 @@ impl ProcessManager {
     }
 
     pub fn get_exit_code(&self, pid: &ProcessId) -> Option<isize> {
-       let proc = self.get_proc(pid)?;
-       let inner = proc.read();
-       if inner.status() == ProgramStatus::Dead {
-           return inner.exit_code();
-       } else {
-           return None;
-       }
+        let proc = self.get_proc(pid)?;
+        let inner = proc.read();
+        if inner.status() == ProgramStatus::Dead {
+            return inner.exit_code();
+        } else {
+            return None;
+        }
     }
 
     pub fn handle_page_fault(&self, addr: VirtAddr, err_code: PageFaultErrorCode) -> bool {
         // FIXED: handle page fault
         if err_code.contains(PageFaultErrorCode::PROTECTION_VIOLATION) {
-            warn!("Page fault at {:#x} with protection violation.", addr.as_u64());
+            warn!(
+                "Page fault at {:#x} with protection violation.",
+                addr.as_u64()
+            );
             return false;
         }
 
@@ -232,5 +228,4 @@ impl ProcessManager {
 
         print!("{}", output);
     }
-
 }

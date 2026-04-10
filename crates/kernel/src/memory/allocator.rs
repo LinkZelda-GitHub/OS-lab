@@ -35,11 +35,6 @@
 //     info!("Kernel Heap Initialized.");
 // }
 
-// #[alloc_error_handler]
-// fn alloc_error_handler(layout: alloc::alloc::Layout) -> ! {
-//     panic!("Allocation error: {:?}", layout);
-// }
-
 use core::ptr::addr_of_mut;
 use core::alloc::{GlobalAlloc, Layout};
 use linked_list_allocator::LockedHeap;
@@ -87,6 +82,11 @@ pub fn init() {
     }
 
     debug!("Kernel Heap Initialized.");
+}
+
+#[alloc_error_handler]
+fn alloc_error_handler(layout: alloc::alloc::Layout) -> ! {
+    panic!("Allocation error: {:?}", layout);
 }
 
 /*
