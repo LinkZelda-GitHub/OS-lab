@@ -1,11 +1,18 @@
 [workspace]
-exclude  = ["crates/app/.cargo", "crates/app/config"]
-members  = ["crates/boot", "crates/elf", "crates/kernel"]
+exclude = ["crates/app/.cargo", "crates/app/config"]
+members = [
+  "crates/app/*",
+  "crates/boot",
+  "crates/elf",
+  "crates/kernel",
+  "crates/lib",
+  "crates/syscall",
+]
 resolver = "3"
 
 [workspace.package]
 edition = "2024"
-version = "0.2.0"
+version = "0.4.0"
 
 [profile.release-with-debug]
 debug    = true
@@ -15,37 +22,58 @@ inherits = "release"
 debug = false
 
 [workspace.dependencies]
+# NOTE: Remove or add dependencies here if you need
+#       This list is copied from final project
+
 arrayvec              = { version = "0.7", default-features = false }
 bit_field             = "0.10"
 bitflags              = "2.10"
+chrono                = { version = "0.4", default-features = false }
 hashbrown             = "0.16"
+hex-literal           = "1.0"
 lazy_static           = { version = "1.4", features = ["spin_no_std"] }
 libm                  = "0.2"
 linked_list_allocator = "0.10"
 log                   = "0.4"
+lru                   = "0.16"
+micromath             = { version = "2.0", features = ["num-traits"] }
+num_enum              = { version = "0.7", default-features = false }
 paste                 = "1.0"
+pc-keyboard           = "0.8"
+rand                  = { version = "0.10", default-features = false }
+rand_hc               = "0.5"
+roaring               = { version = "0.11", default-features = false }
 spin                  = "0.10"
 uefi                  = { version = "0.36", default-features = false }
+volatile              = "0.6"
 x86                   = "0.52"
 x86_64                = "0.15"
 xmas-elf              = "0.10"
-volatile              = "0.4"  
 
 # Local dependencies
 
-boot = { path = "crates/boot", default-features = false, package = "ysos_boot" }
-elf  = { path = "crates/elf", package = "ysos_elf" }
+boot        = { path = "crates/boot", default-features = false, package = "ysos_boot" }
+elf         = { path = "crates/elf", package = "ysos_elf" }
+lib         = { path = "crates/lib", package = "yslib" }
+syscall_def = { path = "crates/syscall", package = "ysos_syscall" }
 
 [workspace.dependencies.ahash]
 default-features = false
 features = [
-  "compile-time-rng",
+  "compile-time-rng"
 ]
 version = "0.8"
 
 [workspace.dependencies.crossbeam-queue]
 default-features = false
 features = [
-  "alloc",
+  "alloc"
+]
+version = "0.3"
+
+[workspace.dependencies.futures-util]
+default-features = false
+features = [
+  "alloc"
 ]
 version = "0.3"
