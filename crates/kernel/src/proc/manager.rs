@@ -17,7 +17,7 @@ use crate::{
 
 pub static PROCESS_MANAGER: spin::Once<ProcessManager> = spin::Once::new();
 
-pub fn init(init: Arc<Process>) {
+pub fn init(init: Arc<Process>, app_list: boot::AppListRef) {
     // FIXED: set init process as Running
     {
         let mut init_inner = init.write();
@@ -27,7 +27,7 @@ pub fn init(init: Arc<Process>) {
     // FIXED: set processor's current pid to init's pid
     processor::set_pid(init.pid());
 
-    PROCESS_MANAGER.call_once(|| ProcessManager::new(init));
+    PROCESS_MANAGER.call_once(|| ProcessManager::new(init, app_list));
 }
 
 pub fn get_process_manager() -> &'static ProcessManager {
@@ -39,10 +39,11 @@ pub fn get_process_manager() -> &'static ProcessManager {
 pub struct ProcessManager {
     processes: RwLock<HashMap<ProcessId, Arc<Process>, ahash::RandomState>>,
     ready_queue: Mutex<VecDeque<ProcessId>>,
+    app_list: boot::AppListRef,
 }
 
 impl ProcessManager {
-    pub fn new(init: Arc<Process>) -> Self {
+    pub fn new(init: Arc<Process>, app_list: boot::AppListRef) -> Self {
         let mut processes = HashMap::default();
         let ready_queue = VecDeque::new();
         let pid = init.pid();
@@ -53,7 +54,13 @@ impl ProcessManager {
         Self {
             processes: RwLock::new(processes),
             ready_queue: Mutex::new(ready_queue),
+            app_list,
         }
+    }
+
+    #[inline]
+    pub fn app_list(&self) -> boot::AppListRef {
+        self.app_list
     }
 
     #[inline]

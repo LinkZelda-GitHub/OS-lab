@@ -2,7 +2,7 @@
 
 use core::ptr::NonNull;
 
-use arrayvec::ArrayVec;
+use arrayvec::{ArrayString, ArrayVec};
 pub use uefi::{
     Status,
     boot::{MemoryAttribute, MemoryDescriptor, MemoryType},
@@ -27,6 +27,22 @@ extern crate log;
 
 pub type BootMemoryMap = ArrayVec<MemoryDescriptor, 256>;
 
+use xmas_elf::ElfFile;
+
+pub const MAX_APP_COUNT: usize = 16;
+
+/// App information
+pub struct App {
+    /// The name of the app
+    pub name: ArrayString<16>,
+    /// The ELF file
+    pub elf: ElfFile<'static>,
+}
+
+pub type AppList = ArrayVec<App, MAX_APP_COUNT>;
+
+pub type AppListRef = Option<&'static AppList>;
+
 /// This structure represents the information that the bootloader passes to the
 /// kernel.
 pub struct BootInfo<'a> {
@@ -42,6 +58,9 @@ pub struct BootInfo<'a> {
 
     /// Only the log level that is greater or equal to log_level can be output
     pub log_lever: &'a str,
+
+    // Loaded apps
+    pub loaded_apps: Option<AppList>,
 }
 
 /// Get current page table from CR3

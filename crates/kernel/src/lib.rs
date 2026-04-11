@@ -24,8 +24,8 @@ pub use utils::*;
 pub mod drivers;
 pub use drivers::*;
 
-pub mod memory;
 pub mod interrupt;
+pub mod memory;
 pub mod proc;
 
 pub use alloc::format;
@@ -46,7 +46,7 @@ pub fn init(boot_info: &'static BootInfo) {
     memory::allocator::init(); // init kernel heap allocator
     interrupt::init(); // init interrupts
     memory::init(boot_info); // init memory manager
-    proc::init(); // init process management
+    proc::init(boot_info); // init process management
 
     x86_64::instructions::interrupts::enable();
     info!("Interrupts Enabled.");

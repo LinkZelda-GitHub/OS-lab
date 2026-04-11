@@ -8,14 +8,11 @@ extern crate alloc;
 
 use alloc::{boxed::Box, vec};
 
-use uefi::{Status, entry};
+use elf::{load_elf, map_physical_memory, map_range};
+use uefi::{Status, entry, mem::memory_map::MemoryMap};
 use x86_64::registers::control::*;
 use xmas_elf::ElfFile;
 use ysos_boot::{config::Config, *};
-use elf::load_elf;
-use elf::map_physical_memory;
-use elf::map_range;
-use uefi::mem::memory_map::MemoryMap;
 
 mod config;
 
@@ -29,7 +26,7 @@ fn efi_main() -> Status {
     info!("Running UEFI bootloader...");
 
     // 1. Load config
-    let config = { 
+    let config = {
         let mut file = open_file(CONFIG_PATH);
         let buf = load_file(&mut file);
         Config::parse(buf)
@@ -39,7 +36,7 @@ fn efi_main() -> Status {
     info!("Config: {:#x?}", config);
 
     // 2. Load ELF files
-    let elf = { 
+    let elf = {
         let mut file = open_file(config.kernel_path);
         let buf = load_file(&mut file);
         ElfFile::new(buf).expect("Invalid ELF file")
@@ -70,14 +67,13 @@ fn efi_main() -> Status {
         });
     }
 
-
     // FIXED: map physical memory to specific virtual address offset
     let mut frame_allocator = UEFIFrameAllocator;
 
     map_physical_memory(
         config.physical_memory_offset,
         max_phys_addr,
-        &mut page_table,   
+        &mut page_table,
         &mut frame_allocator,
     );
 
@@ -85,12 +81,12 @@ fn efi_main() -> Status {
     load_elf(
         &elf,
         config.physical_memory_offset,
-        &mut page_table,   // load_elf expects Mapper<Size4KiB>
+        &mut page_table, // load_elf expects Mapper<Size4KiB>
         &mut frame_allocator,
     )
     .expect("Failed to load ELF");
 
-    // FIXED: map kernel stack 
+    // FIXED: map kernel stack
     map_range(
         config.kernel_stack_address,
         config.kernel_stack_size, // number of 4KiB pages
@@ -100,7 +96,7 @@ fn efi_main() -> Status {
     .expect("Failed to map kernel stack");
 
     // FIXED: recover write protect (Cr0)
-     unsafe {
+    unsafe {
         Cr0::update(|flags| {
             flags.insert(Cr0Flags::WRITE_PROTECT);
         });
@@ -112,7 +108,16 @@ fn efi_main() -> Status {
     let ptr = uefi::table::system_table_raw().expect("Failed to get system table");
     let system_table = ptr.cast::<core::ffi::c_void>();
 
-    // 6. Exit boot and jump to ELF entry
+    // 6. Load apps
+    let apps = if config.load_apps {
+        info!("Loading apps...");
+        Some(load_apps())
+    } else {
+        info!("Skip loading apps");
+        None
+    };
+
+    // 7. Exit boot and jump to ELF entry
     info!("Exiting boot services...");
 
     let mmap = unsafe { uefi::boot::exit_boot_services(None) };
@@ -124,6 +129,7 @@ fn efi_main() -> Status {
         physical_memory_offset: config.physical_memory_offset,
         system_table,
         log_lever: config.log_level,
+        loaded_apps: apps,
     };
 
     // align stack to 8 bytes
