@@ -99,6 +99,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
         println!("Stack trace unavailable (frame-pointer chain empty).");
     }
     loop {}
+    // crate::sys_exit(-1);
 }
 
 fn collect_stack_trace(max_frames: usize) -> StackTrace {

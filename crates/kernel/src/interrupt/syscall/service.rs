@@ -1,5 +1,7 @@
 use core::alloc::Layout;
 
+use uefi::{boot::exit, proto::device_path::build::messaging::RestServiceVendorData};
+
 use super::SyscallArgs;
 use crate::{proc::*, utils::*};
 
@@ -15,22 +17,35 @@ pub fn spawn_process(args: &SyscallArgs) -> usize {
 }
 
 pub fn sys_write(args: &SyscallArgs) -> usize {
-    // FIXME: get buffer and fd by args
-    //       - core::slice::from_raw_parts
-    // FIXME: call proc::write -> isize
-    // FIXME: return the result as usize
+    let fd = args.arg0 as u8;
+    let ptr = args.arg1 as *const u8;
+    let len = args.arg2;
 
-    0
+    // FIXED: get buffer and fd by args
+    //       - core::slice::from_raw_parts
+    let buf = unsafe { core::slice::from_raw_parts(ptr, len) };
+    // FIXED: call proc::write -> isize
+    let ret = crate::proc::write(fd, buf);
+    // FIXED: return the result as usize
+    if ret < 0 { 0 } else { ret as usize }
 }
 
 pub fn sys_read(args: &SyscallArgs) -> usize {
-    // FIXME: just like sys_write
+    // FIXED: just like sys_write
 
-    0
+    let fd = args.arg0 as u8;
+    let ptr = args.arg1 as *mut u8;
+    let len = args.arg2;
+
+    let buf = unsafe { core::slice::from_raw_parts_mut(ptr, len) };
+    let ret = crate::proc::read(fd, buf);
+    if ret < 0 { 0 } else { ret as usize }
 }
 
 pub fn exit_process(args: &SyscallArgs, context: &mut ProcessContext) {
-    // FIXME: exit process with retcode
+    // FIXED: exit process with retcode
+    let retcode = args.arg0 as isize;
+    crate::proc::exit(retcode, context);
 }
 
 pub fn list_process() {

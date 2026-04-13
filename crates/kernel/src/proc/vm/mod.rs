@@ -4,6 +4,7 @@ use x86_64::{
     VirtAddr,
     structures::paging::{page::*, *},
 };
+use xmas_elf::ElfFile;
 
 use crate::{humanized_size, memory::*};
 
@@ -34,7 +35,8 @@ impl ProcessVm {
     #[inline]
     pub fn clone_page_table(&self) -> PageTableContext {
         // self.page_table.clone()
-        PageTableContext::new()
+        // PageTableContext::new()
+        self.page_table.clone_level_4()
     }
 
     pub fn alloc_init_stack(&mut self, pid: ProcessId) -> VirtAddr {
@@ -42,7 +44,6 @@ impl ProcessVm {
         let stack_top_addr = self.stack.alloc_init_stack(pid, &mut mapper);
         stack_top_addr
     }
-
 
     pub fn init_kernel_vm(mut self) -> Self {
         // TODO: record kernel code usage
@@ -65,6 +66,22 @@ impl ProcessVm {
 
     pub(super) fn memory_usage(&self) -> u64 {
         self.stack.memory_usage()
+    }
+
+    pub fn load_elf(&mut self, elf: &ElfFile) -> usize {
+        let mapper = &mut self.page_table.mapper();
+        let alloc = &mut *get_frame_alloc_for_sure();
+
+        let pages = elf::load_elf(
+            elf,
+            crate::memory::PHYSICAL_OFFSET.get().unwrap().clone(),
+            mapper,
+            alloc,
+            true, // user access
+        )
+        .expect("Failed to load ELF");
+
+        pages
     }
 }
 

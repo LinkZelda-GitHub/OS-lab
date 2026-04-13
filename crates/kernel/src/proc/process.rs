@@ -1,11 +1,14 @@
-use alloc::{slice, sync::Weak, vec::Vec};
+use alloc::{
+    slice,
+    sync::{Arc, Weak},
+    vec::Vec,
+};
 
 use spin::*;
 use x86_64::structures::paging::{mapper::MapToError, page::PageRange, *};
 
 use super::*;
 use crate::memory::*;
-use alloc::sync::Arc;
 
 // #[derive(Clone)]
 pub struct Process {
@@ -164,7 +167,8 @@ impl ProcessInner {
         self.resume();
 
         // FIXED: restore the process's page table
-        self.clone_page_table().load();
+        // self.clone_page_table().load();
+        self.vm().page_table.load();
     }
 
     pub fn parent(&self) -> Option<Arc<Process>> {
@@ -181,6 +185,10 @@ impl ProcessInner {
         // FIXED: take and drop unused resources
         self.proc_data.take();
         self.proc_vm.take();
+    }
+
+    pub fn load_elf(&mut self, elf: &ElfFile) -> usize {
+        self.vm_mut().load_elf(elf)
     }
 }
 
@@ -230,14 +238,18 @@ impl core::fmt::Debug for Process {
 impl core::fmt::Display for Process {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let inner = self.inner.read();
+
+        let mem_usage = inner.env("MEM_USAGE").unwrap_or_else(|| "0".to_string());
+
         write!(
             f,
-            " #{:-3} | #{:-3} | {:12} | {:7} | {:?}",
+            " #{:-3} | #{:-3} | {:12} | {:7} | {:?} | {} B",
             self.pid.0,
             inner.parent().map(|p| p.pid.0).unwrap_or(0),
             inner.name,
             inner.ticks_passed,
-            inner.status
+            inner.status,
+            mem_usage
         )?;
         Ok(())
     }

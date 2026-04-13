@@ -1,6 +1,7 @@
 use alloc::string::String;
 
 use hashbrown::HashMap;
+use spin::Mutex;
 
 #[derive(Debug, Clone)]
 pub enum StdIO {

@@ -13,9 +13,9 @@ use x86_64::{
 pub const DOUBLE_FAULT_IST_INDEX: u16 = 0;
 pub const PAGE_FAULT_IST_INDEX: u16 = 1;
 pub const CLOCK_IST_INDEX: u16 = 2;
+pub const SYSCALL_IST_INDEX: u16 = 3;
 
-
-pub const IST_SIZES: [usize; 3] = [0x1000, 0x1000, 0x1000];
+pub const IST_SIZES: [usize; 4] = [0x1000, 0x1000, 0x1000, 0x1000];
 
 lazy_static! {
     static ref TSS: TaskStateSegment = {
@@ -79,32 +79,79 @@ lazy_static! {
             stack_end
         };
 
+        tss.interrupt_stack_table[SYSCALL_IST_INDEX as usize] = {
+            const STACK_SIZE: usize = IST_SIZES[SYSCALL_IST_INDEX as usize];
+            static mut STACK: [u8; STACK_SIZE] = [0; STACK_SIZE];
+            let stack_start = VirtAddr::from_ptr(addr_of_mut!(STACK));
+            let stack_end = stack_start + STACK_SIZE as u64;
+            info!(
+                "Syscall IST       : 0x{:016x}-0x{:016x}",
+                stack_start.as_u64(),
+                stack_end.as_u64()
+            );
+            stack_end
+        };
+
         tss
     };
 }
 
+// lazy_static! {
+//     static ref GDT: (GlobalDescriptorTable, KernelSelectors) = {
+//         let mut gdt = GlobalDescriptorTable::new();
+//         let code_selector = gdt.append(Descriptor::kernel_code_segment());
+//         let data_selector = gdt.append(Descriptor::kernel_data_segment());
+//         let tss_selector = gdt.append(Descriptor::tss_segment(&TSS));
+//         (
+//             gdt,
+//             KernelSelectors {
+//                 code_selector,
+//                 data_selector,
+//                 tss_selector,
+//             },
+//         )
+//     };
+// }
+
+// #[derive(Debug)]
+// pub struct KernelSelectors {
+//     pub code_selector: SegmentSelector,
+//     pub data_selector: SegmentSelector,
+//     tss_selector: SegmentSelector,
+// }
+
 lazy_static! {
-    static ref GDT: (GlobalDescriptorTable, KernelSelectors) = {
+    static ref GDT: (GlobalDescriptorTable, Selectors) = {
         let mut gdt = GlobalDescriptorTable::new();
-        let code_selector = gdt.append(Descriptor::kernel_code_segment());
-        let data_selector = gdt.append(Descriptor::kernel_data_segment());
+        let kernel_code_selector = gdt.append(Descriptor::kernel_code_segment());
+        let kernel_data_selector = gdt.append(Descriptor::kernel_data_segment());
         let tss_selector = gdt.append(Descriptor::tss_segment(&TSS));
+        let user_code_selector = gdt.append(Descriptor::user_code_segment());
+        let user_data_selector = gdt.append(Descriptor::user_data_segment());
         (
             gdt,
-            KernelSelectors {
-                code_selector,
-                data_selector,
+            Selectors {
+                kernel_code_selector,
+                kernel_data_selector,
                 tss_selector,
+                user_code_selector,
+                user_data_selector,
             },
         )
     };
 }
 
 #[derive(Debug)]
-pub struct KernelSelectors {
-    pub code_selector: SegmentSelector,
-    pub data_selector: SegmentSelector,
-    tss_selector: SegmentSelector,
+pub struct Selectors {
+    pub kernel_code_selector: SegmentSelector,
+    pub kernel_data_selector: SegmentSelector,
+    pub tss_selector: SegmentSelector,
+    pub user_code_selector: SegmentSelector,
+    pub user_data_selector: SegmentSelector,
+}
+
+pub fn get_user_selector() -> &'static Selectors {
+    &GDT.1
 }
 
 pub fn init() {
@@ -118,8 +165,8 @@ pub fn init() {
 
     GDT.0.load();
     unsafe {
-        CS::set_reg(GDT.1.code_selector);
-        DS::set_reg(GDT.1.data_selector);
+        CS::set_reg(GDT.1.kernel_code_selector);
+        DS::set_reg(GDT.1.kernel_data_selector);
         SS::set_reg(SegmentSelector::new(0, PrivilegeLevel::Ring0));
         ES::set_reg(SegmentSelector::new(0, PrivilegeLevel::Ring0));
         FS::set_reg(SegmentSelector::new(0, PrivilegeLevel::Ring0));
@@ -139,6 +186,6 @@ pub fn init() {
     info!("GDT Initialized.");
 }
 
-pub fn get_selector() -> &'static KernelSelectors {
+pub fn get_selector() -> &'static Selectors {
     &GDT.1
 }

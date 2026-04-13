@@ -1,5 +1,7 @@
 use alloc::format;
 
+// use core::f128::consts::E;
+
 // NOTE: import `ysos_syscall` package as `syscall_def` in Cargo.toml
 use syscall_def::Syscall;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
@@ -13,9 +15,13 @@ use service::*;
 use super::consts;
 
 pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
-    // FIXME: register syscall handler to IDT
+    // FIXEDS: register syscall handler to IDT
     //        - standalone syscall stack
+    let handler = idt[consts::Interrupts::Syscall as u8]
+        .set_handler_fn(syscall_handler)
+        .set_stack_index(gdt::SYSCALL_IST_INDEX);
     //        - ring 3
+    handler.set_privilege_level(x86_64::PrivilegeLevel::Ring3);
 }
 
 pub extern "C" fn syscall(mut context: ProcessContext) {
@@ -47,9 +53,15 @@ pub fn dispatcher(context: &mut ProcessContext) {
 
     match args.syscall {
         // fd: arg0 as u8, buf: &[u8] (ptr: arg1 as *const u8, len: arg2)
-        Syscall::Read => { /* FIXME: read from fd & return length */ }
+        /* FIXED: read from fd & return length */
+        Syscall::Read => {
+            context.set_rax(sys_read(&args));
+        }
         // fd: arg0 as u8, buf: &[u8] (ptr: arg1 as *const u8, len: arg2)
-        Syscall::Write => { /* FIXME: write to fd & return length */ }
+        /* FIXED: write to fd & return length */
+        Syscall::Write => {
+            context.set_rax(sys_write(&args));
+        }
 
         // None -> pid: u16
         Syscall::GetPid => { /* FIXME: get current pid */ }
@@ -57,7 +69,10 @@ pub fn dispatcher(context: &mut ProcessContext) {
         // path: &str (ptr: arg0 as *const u8, len: arg1) -> pid: u16
         Syscall::Spawn => { /* FIXME: spawn process from name */ }
         // ret: arg0 as isize
-        Syscall::Exit => { /* FIXME: exit process with retcode */ }
+        /* FIXED: exit process with retcode */
+        Syscall::Exit => {
+            exit_process(&args, context);
+        }
         // pid: arg0 as u16 -> status: isize
         Syscall::WaitPid => { /* FIXME: check if the process is running or get retcode */ }
 

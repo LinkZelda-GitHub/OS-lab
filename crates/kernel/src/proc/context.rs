@@ -1,8 +1,11 @@
+use uefi::cstr16;
 // use volatile::{VolatileRef, access::ReadOnly};
 use x86_64::{VirtAddr, registers::rflags::RFlags, structures::idt::InterruptStackFrameValue};
-use x86_64::structures::gdt::SegmentSelector;
 
-use crate::{RegistersValue, memory::gdt::get_selector};
+use crate::{
+    RegistersValue,
+    memory::gdt::{get_selector, get_user_selector},
+};
 
 #[repr(C)]
 #[derive(Clone, Copy)]
@@ -49,9 +52,16 @@ impl ProcessContext {
         self.value.stack_frame.cpu_flags =
             RFlags::IOPL_HIGH | RFlags::IOPL_LOW | RFlags::INTERRUPT_FLAG;
 
-        let selector = get_selector();
-        self.value.stack_frame.code_segment = selector.code_selector;
-        self.value.stack_frame.stack_segment = selector.data_selector;
+        let selector = get_user_selector();
+
+        let mut cs = selector.user_code_selector;
+        let mut ds = selector.user_data_selector;
+
+        cs.set_rpl(x86_64::PrivilegeLevel::Ring3);
+        ds.set_rpl(x86_64::PrivilegeLevel::Ring3);
+
+        self.value.stack_frame.code_segment = cs;
+        self.value.stack_frame.stack_segment = ds;
 
         trace!("Init stack frame: {:#?}", &self.stack_frame);
     }
@@ -63,10 +73,10 @@ impl Default for ProcessContextValue {
             regs: RegistersValue::default(),
             stack_frame: InterruptStackFrameValue::new(
                 VirtAddr::new(0x1000),
-                SegmentSelector(0),
+                get_user_selector().user_code_selector,
                 RFlags::empty(),
                 VirtAddr::new(0x2000),
-                SegmentSelector(0),
+                get_user_selector().user_data_selector,
             ),
         }
     }

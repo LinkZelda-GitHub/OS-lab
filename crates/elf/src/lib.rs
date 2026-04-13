@@ -88,18 +88,27 @@ pub fn load_elf(
     physical_offset: u64,
     page_table: &mut impl Mapper<Size4KiB>,
     frame_allocator: &mut impl FrameAllocator<Size4KiB>,
-) -> Result<(), MapToError<Size4KiB>> {
+    user_access: bool,
+) -> Result<usize, MapToError<Size4KiB>> {
     trace!("Loading ELF file...{:?}", elf.input.as_ptr());
+    let mut mapped_pages = 0;
 
     for segment in elf.program_iter() {
         if segment.get_type().unwrap() != program::Type::Load {
             continue;
         }
 
-        load_segment(elf, physical_offset, &segment, page_table, frame_allocator)?
+        mapped_pages += load_segment(
+            elf,
+            physical_offset,
+            &segment,
+            page_table,
+            frame_allocator,
+            user_access,
+        )?;
     }
 
-    Ok(())
+    Ok(mapped_pages)
 }
 
 /// Load & Map ELF segment
@@ -111,7 +120,8 @@ fn load_segment(
     segment: &program::ProgramHeader,
     page_table: &mut impl Mapper<Size4KiB>,
     frame_allocator: &mut impl FrameAllocator<Size4KiB>,
-) -> Result<(), MapToError<Size4KiB>> {
+    user_access: bool,
+) -> Result<usize, MapToError<Size4KiB>> {
     trace!("Loading & mapping segment: {:#x?}", segment);
 
     let mem_size = segment.mem_size();
@@ -129,15 +139,16 @@ fn load_segment(
     if !segment.flags().is_execute() {
         page_table_flags |= PageTableFlags::NO_EXECUTE;
     }
-    if segment.flags().is_read() {
+    if user_access {
         page_table_flags |= PageTableFlags::USER_ACCESSIBLE;
     }
-    
+
     trace!("Segment page table flag: {:?}", page_table_flags);
 
     let start_page = Page::containing_address(virt_start_addr);
     let end_page = Page::containing_address(virt_start_addr + file_size - 1u64);
     let pages = Page::range_inclusive(start_page, end_page);
+    let mut mapped_pages = 0;
 
     let data = unsafe { elf.input.as_ptr().add(file_offset as usize) };
 
@@ -146,6 +157,7 @@ fn load_segment(
             .allocate_frame()
             .ok_or(MapToError::FrameAllocationFailed)?;
 
+        mapped_pages += 1;
         let offset = idx as u64 * page.size();
         let count = if file_size - offset < page.size() {
             file_size - offset
@@ -194,6 +206,7 @@ fn load_segment(
                 .allocate_frame()
                 .ok_or(MapToError::FrameAllocationFailed)?;
 
+            mapped_pages += 1;
             unsafe {
                 page_table
                     .map_to(page, frame, page_table_flags, frame_allocator)?
@@ -209,5 +222,5 @@ fn load_segment(
         }
     }
 
-    Ok(())
+    Ok(mapped_pages)
 }

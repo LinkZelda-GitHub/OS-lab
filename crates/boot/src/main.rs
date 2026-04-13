@@ -83,6 +83,7 @@ fn efi_main() -> Status {
         config.physical_memory_offset,
         &mut page_table, // load_elf expects Mapper<Size4KiB>
         &mut frame_allocator,
+        false,
     )
     .expect("Failed to load ELF");
 

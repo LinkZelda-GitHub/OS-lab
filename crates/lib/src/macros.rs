@@ -32,6 +32,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
         info.message()
     );
 
-    // FIXME: after syscall, add lib::sys_exit(1);
-    loop {}
+    // FIXED: after syscall, add lib::sys_exit(1);
+    crate::sys_exit(-1);
+    // loop {}
 }

@@ -18,6 +18,8 @@ extern crate libm;
 
 #[macro_use]
 pub mod utils;
+use core::mem;
+
 pub use utils::*;
 
 #[macro_use]
@@ -41,11 +43,12 @@ pub fn init(boot_info: &'static BootInfo) {
 
     serial::init(); // init serial output
     logger::init("Info"); // init logger system
+    memory::allocator::init(); // init kernel heap allocator
     memory::address::init(boot_info);
     memory::gdt::init(); // init gdt
-    memory::allocator::init(); // init kernel heap allocator
-    interrupt::init(); // init interrupts
     memory::init(boot_info); // init memory manager
+    memory::user::init(); // init user heap allocator
+    interrupt::init(); // init interrupts
     proc::init(boot_info); // init process management
 
     x86_64::instructions::interrupts::enable();

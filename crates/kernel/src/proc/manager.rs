@@ -1,9 +1,16 @@
-use alloc::{collections::*, ffi::IntoStringError, format, sync::Arc};
+use alloc::{
+    collections::*,
+    ffi::IntoStringError,
+    format,
+    sync::{Arc, Weak},
+};
 
+use boot::entry_point;
 use hashbrown::HashMap;
 use spin::{Mutex, RwLock};
 use uefi::proto::pi;
 use x86_64::structures::paging::page;
+use xmas_elf::ElfFile;
 
 use super::*;
 use crate::{
@@ -12,7 +19,7 @@ use crate::{
         allocator::{ALLOCATOR, HEAP_SIZE},
         get_frame_alloc_for_sure,
     },
-    proc,
+    proc::{self, vm::stack},
 };
 
 pub static PROCESS_MANAGER: spin::Once<ProcessManager> = spin::Once::new();
@@ -138,32 +145,73 @@ impl ProcessManager {
         }
     }
 
-    pub fn spawn_kernel_thread(
+    // pub fn spawn_kernel_thread(
+    //     &self,
+    //     entry: VirtAddr,
+    //     name: String,
+    //     proc_data: Option<ProcessData>,
+    // ) -> ProcessId {
+    //     let kproc = self.get_proc(&KERNEL_PID).unwrap();
+    //     let page_table = kproc.read().clone_page_table();
+    //     let proc_vm = Some(ProcessVm::new(page_table));
+    //     let proc = Process::new(name, Some(Arc::downgrade(&kproc)), proc_vm,
+    // proc_data);
+
+    //     let pid = proc.pid();
+
+    //     // alloc stack for the new process base on pid
+    //     let stack_top = proc.alloc_init_stack();
+
+    //     // FIXED: set the stack frame
+    //     proc.write().init_stack_frame(entry, stack_top);
+
+    //     // FIXED: add to process map
+    //     self.add_proc(pid, proc);
+
+    //     // FIXED: push to ready queue
+    //     self.push_ready(pid);
+
+    //     // FIXED: return new process pid
+    //     pid
+    // }
+
+    pub fn spawn(
         &self,
-        entry: VirtAddr,
+        elf: &ElfFile,
         name: String,
+        parent: Option<Weak<Process>>,
         proc_data: Option<ProcessData>,
     ) -> ProcessId {
         let kproc = self.get_proc(&KERNEL_PID).unwrap();
         let page_table = kproc.read().clone_page_table();
         let proc_vm = Some(ProcessVm::new(page_table));
-        let proc = Process::new(name, Some(Arc::downgrade(&kproc)), proc_vm, proc_data);
+        let proc = Process::new(name, parent, proc_vm, proc_data);
 
+        let mut inner = proc.write();
+        // FIXME: load elf to process pagetable
+        let text_pages = inner.load_elf(elf);
+        let stack_pages = stack::STACK_DEF_PAGE as usize;
+        let total_memory_bytes = (text_pages + stack_pages) * PAGE_SIZE as usize;
+        inner.set_env("ELF_PAGES", &alloc::format!("{}", text_pages));
+        inner.set_env("MEM_USAGE", &alloc::format!("{}", total_memory_bytes));
+
+        // FIXME: alloc new stack for process
         let pid = proc.pid();
+        let stack_top = inner.vm_mut().init_proc_stack(pid);
+        let entry_point = VirtAddr::new(elf.header.pt2.entry_point() as usize as u64);
+        inner.init_stack_frame(entry_point, stack_top);
 
-        // alloc stack for the new process base on pid
-        let stack_top = proc.alloc_init_stack();
+        // FIXME: mark process as ready
+        inner.resume();
 
-        // FIXED: set the stack frame
-        proc.write().init_stack_frame(entry, stack_top);
+        drop(inner);
 
-        // FIXED: add to process map
-        self.add_proc(pid, proc);
+        trace!("New {:#?}", &proc);
 
-        // FIXED: push to ready queue
+        // FIXME: something like kernel thread
+        self.add_proc(pid, proc.clone());
         self.push_ready(pid);
 
-        // FIXED: return new process pid
         pid
     }
 
@@ -219,7 +267,8 @@ impl ProcessManager {
     }
 
     pub fn print_process_list(&self) {
-        let mut output = String::from("  PID | PPID | Process Name |  Ticks  | Status\n");
+        let mut output =
+            String::from("  PID | PPID | Process Name |  Ticks  | Status | Memory Usage\n");
 
         self.processes
             .read()

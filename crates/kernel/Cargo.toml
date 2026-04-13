@@ -22,3 +22,5 @@ volatile              = { workspace = true }
 x86                   = { workspace = true }
 x86_64                = { workspace = true }
 elf                   = { workspace = true }
+syscall_def           = { path = "../syscall", package = "ysos_syscall" }
+xmas-elf.workspace = true

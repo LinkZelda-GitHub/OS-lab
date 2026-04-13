@@ -26,8 +26,24 @@ pub fn init_user_heap() -> Result<(), MapToError<Size4KiB>> {
     // Get global frame allocator
     let frame_allocator = &mut *super::get_frame_alloc_for_sure();
 
-    // FIXME: use elf::map_range to allocate & map
+    // FIXED: use elf::map_range to allocate & map
     //        frames (R/W/User Access)
+    let range_start = Page::<Size4KiB>::containing_address(VirtAddr::new(USER_HEAP_START as u64));
+    let range_end = range_start + USER_HEAP_PAGE as u64;
+
+    let flags = PageTableFlags::PRESENT
+        | PageTableFlags::WRITABLE
+        | PageTableFlags::USER_ACCESSIBLE
+        | PageTableFlags::NO_EXECUTE;
+
+    for page in Page::range(range_start, range_end) {
+        let frame = frame_allocator
+            .allocate_frame()
+            .ok_or(MapToError::FrameAllocationFailed)?;
+        unsafe {
+            mapper.map_to(page, frame, flags, frame_allocator)?.flush();
+        }
+    }
 
     unsafe {
         USER_ALLOCATOR
