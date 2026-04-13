@@ -61,3 +61,14 @@ pub fn shutdown() -> ! {
     info!("YatSenOS shutting down.");
     uefi::runtime::reset(ResetType::SHUTDOWN, Status::SUCCESS, None);
 }
+
+pub fn wait(init: proc::ProcessId) {
+    loop {
+        if proc::still_alive(init) {
+            // Why? Check reflection question 5
+            x86_64::instructions::hlt();
+        } else {
+            break;
+        }
+    }
+}

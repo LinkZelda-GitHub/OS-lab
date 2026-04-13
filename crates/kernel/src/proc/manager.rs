@@ -81,7 +81,7 @@ impl ProcessManager {
     }
 
     #[inline]
-    fn get_proc(&self, pid: &ProcessId) -> Option<Arc<Process>> {
+    pub(super) fn get_proc(&self, pid: &ProcessId) -> Option<Arc<Process>> {
         self.processes.read().get(pid).cloned()
     }
 
@@ -188,27 +188,27 @@ impl ProcessManager {
         let proc = Process::new(name, parent, proc_vm, proc_data);
 
         let mut inner = proc.write();
-        // FIXME: load elf to process pagetable
+        // FIXED: load elf to process pagetable
         let text_pages = inner.load_elf(elf);
         let stack_pages = stack::STACK_DEF_PAGE as usize;
         let total_memory_bytes = (text_pages + stack_pages) * PAGE_SIZE as usize;
         inner.set_env("ELF_PAGES", &alloc::format!("{}", text_pages));
         inner.set_env("MEM_USAGE", &alloc::format!("{}", total_memory_bytes));
 
-        // FIXME: alloc new stack for process
+        // FIXED: alloc new stack for process
         let pid = proc.pid();
         let stack_top = inner.vm_mut().init_proc_stack(pid);
         let entry_point = VirtAddr::new(elf.header.pt2.entry_point() as usize as u64);
         inner.init_stack_frame(entry_point, stack_top);
 
-        // FIXME: mark process as ready
-        inner.resume();
+        // FIXED: mark process as ready
+        inner.pause();
 
         drop(inner);
 
         trace!("New {:#?}", &proc);
 
-        // FIXME: something like kernel thread
+        // FIXED: something like kernel thread
         self.add_proc(pid, proc.clone());
         self.push_ready(pid);
 

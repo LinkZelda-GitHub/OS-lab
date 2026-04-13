@@ -90,6 +90,7 @@ pub fn elf_spawn(name: String, elf: &ElfFile) -> Option<ProcessId> {
         let pid = manager.spawn(elf, name, Some(parent), None);
 
         debug!("Spawned process: {}#{}", process_name, pid);
+        // print_process_list();
         pid
     });
 
@@ -173,5 +174,17 @@ pub fn exit(ret: isize, context: &mut ProcessContext) {
         manager.kill_current(ret);
         // 调度下个就绪的进程，接管中断返回时的上下文
         manager.switch_next(context);
+    })
+}
+
+#[inline]
+pub fn still_alive(pid: ProcessId) -> bool {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        // check if the process is still alive
+        if let Some(proc) = get_process_manager().get_proc(&pid) {
+            return proc.read().status() != ProgramStatus::Dead;
+        } else {
+            false
+        }
     })
 }

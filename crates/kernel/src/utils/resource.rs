@@ -68,7 +68,16 @@ impl Resource {
         match self {
             Resource::Console(stdio) => match stdio {
                 StdIO::Stdin => {
-                    // FIXME: just read from kernel input buffer
+                    // FIXED: just read from kernel input buffer
+
+                    if buf.len() == 0 {
+                        return Some(0);
+                    }
+
+                    if let Some(c) = crate::drivers::input::try_pop_key() {
+                        buf[0] = c;
+                        return Some(1);
+                    }
                     Some(0)
                 }
                 _ => None,

@@ -36,7 +36,7 @@ pub fn init() {
     }
 
     // FIXED: enable serial irq with IO APIC (use enable_irq)
-    // enable_irq(Irq::Timer as u8, 0);
+    enable_irq(Irq::Timer as u8, 0);
     enable_irq(Irq::Serial0 as u8, 0); // enable IRQ4 for CPU0
 
     info!("Interrupts Initialized.");

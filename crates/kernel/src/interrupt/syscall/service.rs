@@ -6,14 +6,40 @@ use super::SyscallArgs;
 use crate::{proc::*, utils::*};
 
 pub fn spawn_process(args: &SyscallArgs) -> usize {
-    // FIXME: get app name by args
+    // FIXED: get app name by args
     //       - core::str::from_utf8_unchecked
     //       - core::slice::from_raw_parts
-    // FIXME: spawn the process by name
-    // FIXME: handle spawn error, return 0 if failed
-    // FIXME: return pid as usize
+    let ptr = args.arg0 as *const u8;
+    let len = args.arg1;
 
-    0
+    let name_buf = unsafe { core::slice::from_raw_parts(ptr, len) };
+    let name = unsafe { core::str::from_utf8_unchecked(name_buf) };
+    // FIXED: spawn the process by name
+    // FIXED: handle spawn error, return 0 if failed
+    // FIXED: return pid as usize
+    if let Some(pid) = crate::proc::spawn(name) {
+        pid.0 as usize
+    } else {
+        0
+    }
+}
+
+pub fn wait_pid(args: &SyscallArgs) -> isize {
+    let pid = crate::proc::ProcessId(args.arg0 as u16);
+
+    if crate::proc::still_alive(pid) {
+        return -1isize; // still alive
+    }
+
+    if let Some(code) = crate::proc::get_process_exit_code(pid) {
+        code
+    } else {
+        -2isize // no such process
+    }
+}
+
+pub fn sys_list_app() {
+    crate::proc::list_app();
 }
 
 pub fn sys_write(args: &SyscallArgs) -> usize {
@@ -49,7 +75,8 @@ pub fn exit_process(args: &SyscallArgs, context: &mut ProcessContext) {
 }
 
 pub fn list_process() {
-    // FIXME: list all processes
+    // FIXED: list all processes
+    crate::proc::print_process_list();
 }
 
 pub fn sys_allocate(args: &SyscallArgs) -> usize {

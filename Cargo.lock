@@ -457,6 +457,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ysos_factorial"
+version = "0.4.0"
+dependencies = [
+ "yslib",
+]
+
+[[package]]
 name = "ysos_hello"
 version = "0.4.0"
 dependencies = [
@@ -486,6 +493,13 @@ dependencies = [
  "ysos_boot",
  "ysos_elf",
  "ysos_syscall",
+]
+
+[[package]]
+name = "ysos_sh"
+version = "0.4.0"
+dependencies = [
+ "yslib",
 ]
 
 [[package]]

@@ -6,7 +6,10 @@ use alloc::format;
 use syscall_def::Syscall;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame};
 
-use crate::{memory::gdt, proc::*};
+use crate::{
+    memory::gdt,
+    proc::{processor::get_pid, *},
+};
 
 mod service;
 // FIXME: write syscall service handler in `service.rs`
@@ -64,22 +67,39 @@ pub fn dispatcher(context: &mut ProcessContext) {
         }
 
         // None -> pid: u16
-        Syscall::GetPid => { /* FIXME: get current pid */ }
+        /* FIXED: get current pid */
+        Syscall::GetPid => {
+            context.set_rax(get_pid().0 as usize);
+        }
 
         // path: &str (ptr: arg0 as *const u8, len: arg1) -> pid: u16
-        Syscall::Spawn => { /* FIXME: spawn process from name */ }
+        /* FIXED: spawn process from name */
+        Syscall::Spawn => {
+            context.set_rax(spawn_process(&args));
+        }
         // ret: arg0 as isize
         /* FIXED: exit process with retcode */
         Syscall::Exit => {
             exit_process(&args, context);
         }
         // pid: arg0 as u16 -> status: isize
-        Syscall::WaitPid => { /* FIXME: check if the process is running or get retcode */ }
+        /* FIXED: check if the process is running or get retcode */
+        Syscall::WaitPid => {
+            context.set_rax(wait_pid(&args) as usize);
+        }
 
         // None
-        Syscall::Stat => { /* FIXME: list processes */ }
+        /* FIXED: list processes */
+        Syscall::Stat => {
+            list_process();
+            context.set_rax(0);
+        }
         // None
-        Syscall::ListApp => { /* FIXME: list available apps */ }
+        /* FIXED: list available apps */
+        Syscall::ListApp => {
+            sys_list_app();
+            context.set_rax(0);
+        }
 
         // ----------------------------------------------------
         // NOTE: following syscall examples are implemented

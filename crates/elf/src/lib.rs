@@ -55,7 +55,8 @@ pub fn map_range(
     );
 
     // default flags for stack
-    let flags = PageTableFlags::PRESENT | PageTableFlags::WRITABLE;
+    let flags =
+        PageTableFlags::PRESENT | PageTableFlags::WRITABLE | PageTableFlags::USER_ACCESSIBLE;
 
     for page in Page::range(range_start, range_end) {
         let frame = frame_allocator
