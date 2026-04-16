@@ -18,7 +18,7 @@ use service::*;
 use super::consts;
 
 pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
-    // FIXEDS: register syscall handler to IDT
+    // FIXED: register syscall handler to IDT
     //        - standalone syscall stack
     let handler = idt[consts::Interrupts::Syscall as u8]
         .set_handler_fn(syscall_handler)
@@ -44,6 +44,18 @@ pub struct SyscallArgs {
 }
 
 pub fn dispatcher(context: &mut ProcessContext) {
+    // info!(
+    //     "current cr3: {:#x}",
+    //     x86_64::registers::control::Cr3::read()
+    //         .0
+    //         .start_address()
+    //         .as_u64()
+    // );
+    // info!(
+    //     "process cr3: {:#x}",
+    //     crate::proc::debug_current_process_cr3()
+    // );
+
     let args = super::syscall::SyscallArgs::new(
         Syscall::from(context.regs.rax),
         context.regs.rdi,

@@ -239,17 +239,24 @@ impl core::fmt::Display for Process {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let inner = self.inner.read();
 
-        let mem_usage = inner.env("MEM_USAGE").unwrap_or_else(|| "0".to_string());
+        let elf_pages = inner
+            .env("ELF_PAGES")
+            .and_then(|s| s.parse::<u64>().ok())
+            .unwrap_or(0);
+
+        let total_page = elf_pages + inner.vm().memory_usage() / crate::memory::PAGE_SIZE;
+        let current_mem_bytes = elf_pages * crate::memory::PAGE_SIZE + inner.vm().memory_usage();
 
         write!(
             f,
-            " #{:-3} | #{:-3} | {:12} | {:7} | {:?} | {} B",
+            " #{:-3} | #{:-3} | {:12} | {:7} | {:?} | {} B ({} Pages)",
             self.pid.0,
             inner.parent().map(|p| p.pid.0).unwrap_or(0),
             inner.name,
             inner.ticks_passed,
             inner.status,
-            mem_usage
+            current_mem_bytes,
+            total_page,
         )?;
         Ok(())
     }

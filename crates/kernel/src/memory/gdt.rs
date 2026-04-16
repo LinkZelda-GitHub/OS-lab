@@ -23,7 +23,7 @@ lazy_static! {
 
         // initialize the TSS with the static buffers
         // will be allocated on the bss section when the kernel is load
-        //
+
         // DO NOT MODIFY THE FOLLOWING CODE
         tss.privilege_stack_table[0] = {
             const STACK_SIZE: usize = IST_SIZES[0];

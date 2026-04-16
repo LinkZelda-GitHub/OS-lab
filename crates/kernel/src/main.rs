@@ -1,8 +1,10 @@
 #![no_std]
 #![no_main]
 
+// use lib::*;
 use ysos::*;
-use ysos_kernel::{self as ysos, proc::print_process_list};
+// extern crate lib;
+use ysos_kernel::{self as ysos};
 
 extern crate alloc;
 
@@ -11,9 +13,17 @@ boot::entry_point!(kernel_main);
 pub fn kernel_main(boot_info: &'static boot::BootInfo) -> ! {
     ysos::init(boot_info);
 
-    // spawn_test();
-
     ysos::wait(spawn_init());
+    // sys_exit(0);
+    // unsafe {
+    //     core::arch::asm!(
+    //         "int 0x80",
+    //         in("rax") 60,
+    //         in("rdi") 0,
+    //     );
+    // }
+
+    // loop {}
     ysos::shutdown();
 }
 

@@ -142,16 +142,30 @@ pub fn list_app() {
             return;
         }
 
-        let apps = app_list
-            .unwrap()
-            .iter()
-            .map(|app| app.name.as_str())
-            .collect::<Vec<&str>>()
-            .join(", ");
+        // FIXED: print more information like size, entry point, etc.
+        println!("[+] App list:");
+        println!("  {:15} | {:10} | {}", "App Name", "Size", "Entry Point");
+        println!("  {:-<15}-+-{:-<10}-+-{:-<18}", "", "", "");
 
-        // TODO: print more information like size, entry point, etc.
+        for app in app_list.unwrap().iter() {
+            let name = app.name.as_str();
+            let size = app.elf.input.len(); // ELF 镜像内存大小
+            let entry = app.elf.header.pt2.entry_point(); // 程序入口点绝对地址
 
-        println!("[+] App list: {}", apps);
+            println!("  {:15} | {:>8} B | {:#018x}", name, size, entry);
+        }
+        println!();
+
+        // let apps = app_list
+        //     .unwrap()
+        //     .iter()
+        //     .map(|app| app.name.as_str())
+        //     .collect::<Vec<&str>>()
+        //     .join(", ");
+
+        // // TODO: print more information like size, entry point, etc.
+
+        // println!("[+] App list: {}", apps);
     });
 }
 
@@ -186,5 +200,19 @@ pub fn still_alive(pid: ProcessId) -> bool {
         } else {
             false
         }
+    })
+}
+
+pub fn debug_current_process_cr3() -> u64 {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        get_process_manager()
+            .current()
+            .read()
+            .vm()
+            .page_table
+            .reg
+            .addr
+            .start_address()
+            .as_u64()
     })
 }
