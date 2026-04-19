@@ -81,6 +81,39 @@ pub fn map_range(
     Ok(Page::range(range_start, range_end))
 }
 
+/// Unmap a range of memory
+///
+/// unmap frames and deallocate from specified address and count
+pub fn unmap_range(
+    addr: u64,
+    count: u64,
+    page_table: &mut impl Mapper<Size4KiB>,
+    frame_deallocator: &mut impl FrameDeallocator<Size4KiB>,
+) -> Result<(), UnmapError> {
+    let range_start = Page::containing_address(VirtAddr::new(addr));
+    let range_end = range_start + count;
+
+    trace!(
+        "Unmap Page Range: {:?}({})",
+        Page::range(range_start, range_end),
+        count,
+    );
+
+    for page in Page::range(range_start, range_end) {
+        if let Ok((phys_frame, flusher)) = page_table.unmap(page) {
+            flusher.flush();
+
+            unsafe {
+                frame_deallocator.deallocate_frame(phys_frame);
+            }
+        } else {
+            warn!("Failed to unmap page: {:#x}", page.start_address().as_u64());
+        }
+    }
+
+    Ok(())
+}
+
 /// Load & Map ELF file
 ///
 /// load segments in ELF file to new frames and set page table

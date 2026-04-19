@@ -1,9 +1,9 @@
-use alloc::boxed::Box;
+use alloc::{boxed::Box, vec::Vec};
 
 use boot::{BootMemoryMap, MemoryType};
 use x86_64::{
     PhysAddr,
-    structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame, Size4KiB},
+    structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame, Size4KiB, frame},
 };
 
 once_mutex!(pub FRAME_ALLOCATOR: BootInfoFrameAllocator);
@@ -20,6 +20,7 @@ pub struct BootInfoFrameAllocator {
     size: usize,
     used: usize,
     frames: BootInfoFrameIter,
+    freed_frames: Vec<PhysFrame>,
 }
 
 impl BootInfoFrameAllocator {
@@ -33,6 +34,7 @@ impl BootInfoFrameAllocator {
             size,
             frames: create_frame_iter(memory_map),
             used: 0,
+            freed_frames: Vec::new(),
         }
     }
 
@@ -47,6 +49,12 @@ impl BootInfoFrameAllocator {
 
 unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
+        // FIXED: 先看看内存回收池里面有没有限制的页面
+        if let Some(reused_frame) = self.freed_frames.pop() {
+            self.used += 1;
+            return Some(reused_frame);
+        }
+
         self.used += 1;
         self.frames.next()
     }
@@ -55,6 +63,9 @@ unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
 impl FrameDeallocator<Size4KiB> for BootInfoFrameAllocator {
     unsafe fn deallocate_frame(&mut self, _frame: PhysFrame) {
         // TODO: deallocate frame (not for lab 2)
+        self.freed_frames.push(_frame);
+
+        self.used -= 1;
     }
 }
 

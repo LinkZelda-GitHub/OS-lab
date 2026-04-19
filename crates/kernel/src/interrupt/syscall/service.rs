@@ -79,6 +79,17 @@ pub fn list_process() {
     crate::proc::print_process_list();
 }
 
+pub fn sys_get_time() -> usize {
+    let t = uefi::runtime::get_time().expect("Failed to get UEFI time");
+
+    let time_ms = t.second() as usize * 1000
+        + t.minute() as usize * 60 * 1000
+        + t.hour() as usize * 3600 * 1000
+        + (t.nanosecond() / 1_000_000) as usize;
+
+    time_ms
+}
+
 pub fn sys_allocate(args: &SyscallArgs) -> usize {
     let layout = unsafe { (args.arg0 as *const Layout).as_ref().unwrap() };
 

@@ -113,6 +113,10 @@ pub fn dispatcher(context: &mut ProcessContext) {
             context.set_rax(0);
         }
 
+        Syscall::GetTime => {
+            context.set_rax(sys_get_time());
+        }
+
         // ----------------------------------------------------
         // NOTE: following syscall examples are implemented
         // ----------------------------------------------------

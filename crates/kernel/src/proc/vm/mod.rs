@@ -1,5 +1,6 @@
 use alloc::format;
 
+use elf::unmap_range;
 use x86_64::{
     VirtAddr,
     structures::paging::{page::*, *},
@@ -82,6 +83,24 @@ impl ProcessVm {
         .expect("Failed to load ELF");
 
         pages
+    }
+}
+
+impl Drop for ProcessVm {
+    fn drop(&mut self) {
+        let mapper = &mut self.page_table.mapper();
+        let alloc = &mut *get_frame_alloc_for_sure();
+
+        let stack_start_addr = self.stack.range.start.start_address().as_u64();
+
+        let stack_page_count = self.stack.usage;
+
+        if stack_page_count > 0 && stack_start_addr != 0 {
+            trace!("Deallocating Process Stack at {:#x}", stack_start_addr);
+            let _ = unmap_range(stack_start_addr, stack_page_count, mapper, alloc);
+        }
+
+        // TODO
     }
 }
 

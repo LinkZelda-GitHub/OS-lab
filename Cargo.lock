@@ -503,6 +503,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ysos_sleep"
+version = "0.4.0"
+dependencies = [
+ "yslib",
+]
+
+[[package]]
 name = "ysos_syscall"
 version = "0.4.0"
 dependencies = [

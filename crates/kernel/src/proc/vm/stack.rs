@@ -1,15 +1,15 @@
+use elf::map_range;
 use x86::current;
 use x86_64::{
     VirtAddr,
     structures::paging::{Page, mapper::MapToError, page::*},
 };
 
-use elf::map_range;
-
-use crate::{memory::get_frame_alloc_for_sure, proc::pid};
-
 use super::{FrameAllocatorRef, MapperRef};
-use crate::proc::ProcessId;
+use crate::{
+    memory::get_frame_alloc_for_sure,
+    proc::{ProcessId, pid},
+};
 
 // 0xffff_ff00_0000_0000 is the kernel's address space
 pub const STACK_MAX: u64 = 0x4000_0000_0000;
@@ -42,8 +42,8 @@ const KSTACK_INIT_TOP_PAGE: Page<Size4KiB> =
     Page::containing_address(VirtAddr::new(KSTACK_INIT_TOP));
 
 pub struct Stack {
-    range: PageRange<Size4KiB>,
-    usage: u64,
+    pub(super) range: PageRange<Size4KiB>,
+    pub(super) usage: u64,
 }
 
 impl Stack {
@@ -82,10 +82,11 @@ impl Stack {
         let stack_bot = STACK_INIT_BOT - pid_offset;
         let stack_top = STACK_INIT_TOP - pid_offset;
 
-        self.range = map_range(stack_bot, STACK_DEF_PAGE, mapper, alloc)
-            .expect("Failed to map stack");
+        self.range =
+            map_range(stack_bot, STACK_DEF_PAGE, mapper, alloc).expect("Failed to map stack");
 
-        // log::info!("Stack of Process {} : 0x{:016x} ~ 0x{:016x}", pid, stack_bot, stack_top);
+        // log::info!("Stack of Process {} : 0x{:016x} ~ 0x{:016x}", pid, stack_bot,
+        // stack_top);
 
         VirtAddr::new(stack_top)
     }
@@ -141,9 +142,9 @@ impl Stack {
         self.range = Page::range(fault_page, self.range.end);
         self.usage += page_to_alloc;
 
-        // log::info!("PID {} Stack Expand! Fault Addr: {:#x}, Allocating {} pages", 
-        //    crate::proc::processor::get_pid().0, 
-        //    addr.as_u64(), 
+        // log::info!("PID {} Stack Expand! Fault Addr: {:#x}, Allocating {} pages",
+        //    crate::proc::processor::get_pid().0,
+        //    addr.as_u64(),
         //    page_to_alloc);
 
         Ok(())
