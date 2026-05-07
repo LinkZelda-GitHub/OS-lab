@@ -180,7 +180,7 @@ impl Stack {
         alloc: FrameAllocatorRef,
         stack_offset_count: u64,
     ) -> Self {
-        // FIXME: alloc & map new stack for child (see instructions)
+        // FIXED: alloc & map new stack for child (see instructions)
         let cur_stack_base = self.range.start.start_address().as_u64();
         let mut new_stack_base = cur_stack_base - stack_offset_count * STACK_MAX_SIZE;
 
@@ -192,9 +192,9 @@ impl Stack {
             new_stack_base -= STACK_MAX_SIZE; // stack grow down
         }
         // log::info!("2. current: {}, new: {}", cur_stack_base, new_stack_base);
-        // FIXME: copy the *entire stack* from parent to child
+        // FIXED: copy the *entire stack* from parent to child
         self.clone_range(cur_stack_base, new_stack_base, self.usage);
-        // FIXME: return the new stack
+        // FIXED: return the new stack
         Self {
             range: Page::range(
                 Page::containing_address(VirtAddr::new(new_stack_base)),

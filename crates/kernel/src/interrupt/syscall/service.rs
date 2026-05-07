@@ -24,19 +24,19 @@ pub fn spawn_process(args: &SyscallArgs) -> usize {
     }
 }
 
-pub fn wait_pid(args: &SyscallArgs) -> isize {
-    let pid = crate::proc::ProcessId(args.arg0 as u16);
+// pub fn wait_pid(args: &SyscallArgs) -> isize {
+//     let pid = crate::proc::ProcessId(args.arg0 as u16);
 
-    if crate::proc::still_alive(pid) {
-        return -1isize; // still alive
-    }
+//     if crate::proc::still_alive(pid) {
+//         return -1isize; // still alive
+//     }
 
-    if let Some(code) = crate::proc::get_process_exit_code(pid) {
-        code
-    } else {
-        -2isize // no such process
-    }
-}
+//     if let Some(code) = crate::proc::get_process_exit_code(pid) {
+//         code
+//     } else {
+//         -2isize // no such process
+//     }
+// }
 
 pub fn sys_list_app() {
     crate::proc::list_app();

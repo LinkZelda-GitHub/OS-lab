@@ -98,9 +98,9 @@ impl Process {
     }
 
     pub fn fork(self: &Arc<Self>) -> Arc<Self> {
-        // FIXME: lock inner as write
+        // FIXED: lock inner as write
         let mut inner = self.write();
-        // FIXME: inner fork with parent weak ref
+        // FIXED: inner fork with parent weak ref
         let child_inner = inner.fork(Arc::downgrade(self));
 
         // FOR DBG: maybe print the child process info
@@ -111,16 +111,16 @@ impl Process {
             self.pid,
             child_inner.parent().unwrap().pid()
         );
-        // FIXME: make the arc of child
+        // FIXED: make the arc of child
         let child = Arc::new(Self {
             pid: ProcessId::new(),
             inner: spin::RwLock::new(child_inner),
         });
-        // FIXME: add child to current process's children list
+        // FIXED: add child to current process's children list
         inner.children.push(child.clone());
-        // FIXME: set fork ret value for parent with `context.set_rax`
+        // FIXED: set fork ret value for parent with `context.set_rax`
         inner.context.set_rax(child.pid().0 as usize);
-        // FIXME: mark the child as ready & return it
+        // FIXED: mark the child as ready & return it
         child
     }
 }
@@ -222,21 +222,21 @@ impl ProcessInner {
     }
 
     pub fn fork(&mut self, parent: Weak<Process>) -> ProcessInner {
-        // FIXME: fork the process virtual memory struct
-        // FIXME: calculate the real stack offset
+        // FIXED: fork the process virtual memory struct
+        // FIXED: calculate the real stack offset
         let stack_offset_count = self.children.len() as u64 + 1;
         let child_vm = self.vm().fork(stack_offset_count);
-        // FIXME: clone the process data struct
+        // FIXED: clone the process data struct
         let mut child_context = self.context.clone();
 
-        // FIXME: update `rsp` in interrupt stack frame
-        // FIXME: set the return value 0 for child with `context.set_rax`
-        let actual_stack_offset = stack_offset_count * STACK_MAX_SIZE;
+        // FIXED: update `rsp` in interrupt stack frame
+        // FIXED: set the return value 0 for child with `context.set_rax`
+        let stack_offset = stack_offset_count * STACK_MAX_SIZE;
 
-        child_context.as_mut().stack_frame.stack_pointer -= actual_stack_offset;
-        child_context.as_mut().regs.rbp -= actual_stack_offset as usize;
+        child_context.as_mut().stack_frame.stack_pointer -= stack_offset;
+        child_context.as_mut().regs.rbp -= stack_offset as usize;
         child_context.set_rax(0);
-        // FIXME: construct the child process inner
+        // FIXED: construct the child process inner
         let child_data = self.proc_data.clone();
         // NOTE: return inner because there's no pid record in inner
         ProcessInner {
@@ -250,6 +250,14 @@ impl ProcessInner {
             proc_data: child_data,
             proc_vm: Some(child_vm),
         }
+    }
+
+    pub fn block(&mut self) {
+        self.status = ProgramStatus::Blocked;
+    }
+
+    pub fn set_rax(&mut self, value: usize) {
+        self.context.set_rax(value);
     }
 }
 

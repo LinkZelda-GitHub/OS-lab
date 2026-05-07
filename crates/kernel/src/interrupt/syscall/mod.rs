@@ -98,7 +98,8 @@ pub fn dispatcher(context: &mut ProcessContext) {
         // pid: arg0 as u16 -> status: isize
         /* FIXED: check if the process is running or get retcode */
         Syscall::WaitPid => {
-            context.set_rax(wait_pid(&args) as usize);
+            let pid = crate::proc::ProcessId(args.arg0 as u16);
+            crate::proc::wait_pid(pid, context);
         }
 
         // None

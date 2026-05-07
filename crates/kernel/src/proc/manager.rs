@@ -5,6 +5,7 @@ use alloc::{
     sync::{Arc, Weak},
 };
 
+// use core::f32::math::fract;
 use boot::entry_point;
 use hashbrown::HashMap;
 use log::set_logger;
@@ -44,12 +45,12 @@ use x86_64::instructions::interrupts;
 pub fn fork(context: &mut ProcessContext) {
     x86_64::instructions::interrupts::without_interrupts(|| {
         let manager = get_process_manager();
-        // FIXME: save_current as parent
+        // FIXED: save_current as parent
         manager.save_current(context);
-        // FIXME: fork to get child
+        // FIXED: fork to get child
         manager.fork();
-        // FIXME: push to child & parent to ready queue
-        // FIXME: switch to next process
+        // FIXED: push to child & parent to ready queue
+        // FIXED: switch to next process
         manager.switch_next(context);
     })
 }
@@ -64,6 +65,7 @@ pub struct ProcessManager {
     processes: RwLock<HashMap<ProcessId, Arc<Process>, ahash::RandomState>>,
     ready_queue: Mutex<VecDeque<ProcessId>>,
     app_list: boot::AppListRef,
+    wait_queue: Mutex<HashMap<ProcessId, BTreeSet<ProcessId>, ahash::RandomState>>,
 }
 
 impl ProcessManager {
@@ -79,6 +81,7 @@ impl ProcessManager {
             processes: RwLock::new(processes),
             ready_queue: Mutex::new(ready_queue),
             app_list,
+            wait_queue: Mutex::new(HashMap::default()),
         }
     }
 
@@ -281,6 +284,12 @@ impl ProcessManager {
         trace!("Kill {:#?}", &proc);
 
         proc.kill(ret);
+
+        if let Some(pids) = self.wait_queue.lock().remove(&pid) {
+            for pid in pids {
+                self.wake_up(pid, Some(ret));
+            }
+        }
     }
 
     pub fn print_process_list(&self) {
@@ -303,12 +312,12 @@ impl ProcessManager {
     }
 
     pub fn fork(&self) {
-        // FIXME: get current process
+        // FIXED: get current process
         let current = self.current();
-        // FIXME: fork to get child
+        // FIXED: fork to get child
         let child = current.fork();
         let child_pid = child.pid();
-        // FIXME: add child to process list
+        // FIXED: add child to process list
         self.add_proc(child_pid, child.clone());
         self.push_ready(child_pid);
         // FOR DBG: maybe print the process ready queue?
@@ -317,5 +326,41 @@ impl ProcessManager {
             current.pid(),
             child_pid
         );
+    }
+
+    /// Block the process with the given pid
+    pub fn block(&self, pid: ProcessId) {
+        if let Some(proc) = self.get_proc(&pid) {
+            // FIXED: set the process as blocked
+            let mut proc_inner = proc.write();
+            proc_inner.block();
+        }
+    }
+
+    pub fn wait_pid(&self, pid: ProcessId) {
+        let mut wait_queue = self.wait_queue.lock();
+        // FIXED: push the current process to the wait queue
+        //        `processor::get_pid()` is waiting for `pid`
+        let entry = wait_queue.entry(pid).or_default();
+        entry.insert(processor::get_pid());
+    }
+
+    /// Wake up the process with the given pid
+    ///
+    /// If `ret` is `Some`, set the return value of the process
+    pub fn wake_up(&self, pid: ProcessId, ret: Option<isize>) {
+        if let Some(proc) = self.get_proc(&pid) {
+            let mut inner = proc.write();
+            if let Some(ret) = ret {
+                // FIXED: set the return value of the process
+                //        like `context.set_rax(ret as usize)`
+                inner.set_rax(ret as usize);
+            }
+            // FIXED: set the process as ready
+            inner.pause();
+            drop(inner);
+            // FIXED: push to ready queue
+            self.push_ready(pid);
+        }
     }
 }

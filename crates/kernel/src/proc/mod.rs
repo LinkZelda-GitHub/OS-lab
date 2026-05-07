@@ -217,3 +217,17 @@ pub fn debug_current_process_cr3() -> u64 {
             .as_u64()
     })
 }
+
+pub fn wait_pid(pid: ProcessId, context: &mut ProcessContext) {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let manager = get_process_manager();
+        if let Some(ret) = manager.get_exit_code(&pid) {
+            context.set_rax(ret as usize);
+        } else {
+            manager.wait_pid(pid);
+            manager.save_current(context);
+            manager.current().write().block();
+            manager.switch_next(context);
+        }
+    })
+}
