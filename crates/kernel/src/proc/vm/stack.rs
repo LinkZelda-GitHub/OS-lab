@@ -90,6 +90,7 @@ impl Stack {
 
         // log::info!("Stack of Process {} : 0x{:016x} ~ 0x{:016x}", pid, stack_bot,
         // stack_top);
+        self.usage = STACK_DEF_PAGE;
 
         VirtAddr::new(stack_top)
     }
@@ -183,23 +184,21 @@ impl Stack {
         let cur_stack_base = self.range.start.start_address().as_u64();
         let mut new_stack_base = cur_stack_base - stack_offset_count * STACK_MAX_SIZE;
 
-        log::info!("1. current: {}, new: {}", cur_stack_base, new_stack_base);
+        // log::info!("1. current: {}, new: {}", cur_stack_base, new_stack_base);
+        // log::info!("usage: {} range: {}", self.usage, cur_stack_base);
 
         while elf::map_range(new_stack_base, self.usage, mapper, alloc).is_err() {
             trace!("Map thread stack to {:#x} failed.", new_stack_base);
             new_stack_base -= STACK_MAX_SIZE; // stack grow down
         }
-        log::info!("2. current: {}, new: {}", cur_stack_base, new_stack_base);
+        // log::info!("2. current: {}, new: {}", cur_stack_base, new_stack_base);
         // FIXME: copy the *entire stack* from parent to child
-        let copy_size_bytes = (self.usage * crate::memory::PAGE_SIZE as u64) as usize;
         self.clone_range(cur_stack_base, new_stack_base, self.usage);
         // FIXME: return the new stack
         Self {
             range: Page::range(
                 Page::containing_address(VirtAddr::new(new_stack_base)),
-                Page::containing_address(VirtAddr::new(
-                    new_stack_base + copy_size_bytes as u64 - 1,
-                )),
+                Page::containing_address(VirtAddr::new(new_stack_base)) + self.usage,
             ),
             usage: self.usage,
         }
