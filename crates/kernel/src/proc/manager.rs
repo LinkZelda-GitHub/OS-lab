@@ -7,8 +7,10 @@ use alloc::{
 
 use boot::entry_point;
 use hashbrown::HashMap;
+use log::set_logger;
 use spin::{Mutex, RwLock};
 use uefi::proto::pi;
+use x86::current;
 use x86_64::structures::paging::page;
 use xmas_elf::ElfFile;
 
@@ -35,6 +37,21 @@ pub fn init(init: Arc<Process>, app_list: boot::AppListRef) {
     processor::set_pid(init.pid());
 
     PROCESS_MANAGER.call_once(|| ProcessManager::new(init, app_list));
+}
+
+use x86_64::instructions::interrupts;
+
+pub fn fork(context: &mut ProcessContext) {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let manager = get_process_manager();
+        // FIXME: save_current as parent
+        manager.save_current(context);
+        // FIXME: fork to get child
+        manager.fork();
+        // FIXME: push to child & parent to ready queue
+        // FIXME: switch to next process
+        manager.switch_next(context);
+    })
 }
 
 pub fn get_process_manager() -> &'static ProcessManager {
@@ -283,5 +300,22 @@ impl ProcessManager {
         output += &processor::print_processors();
 
         print!("{}", output);
+    }
+
+    pub fn fork(&self) {
+        // FIXME: get current process
+        let current = self.current();
+        // FIXME: fork to get child
+        let child = current.fork();
+        let child_pid = child.pid();
+        // FIXME: add child to process list
+        self.add_proc(child_pid, child.clone());
+        self.push_ready(child_pid);
+        // FOR DBG: maybe print the process ready queue?
+        log::trace!(
+            "Process {:?} successfully forked child {:?}",
+            current.pid(),
+            child_pid
+        );
     }
 }

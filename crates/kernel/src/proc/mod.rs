@@ -11,6 +11,7 @@ use alloc::{string::String, sync::Arc, vec::Vec};
 
 pub use context::ProcessContext;
 pub use data::ProcessData;
+pub use manager::fork;
 use manager::*;
 pub use paging::PageTableContext;
 pub use pid::ProcessId;

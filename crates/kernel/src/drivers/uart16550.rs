@@ -1,14 +1,15 @@
 use core::fmt;
-use x86_64::instructions::port::Port;
+
 use bitflags::bitflags;
+use x86_64::instructions::port::Port;
 
 // 串口寄存器偏移量
 const DATA: u16 = 0;
-const IER:   u16 = 1;  // 中断使能寄存器
-const FCR:   u16 = 2;  // FIFO 控制寄存器
-const LCR:   u16 = 3;  // 线控寄存器
-const MCR:   u16 = 4;  // 调制解调器控制寄存器
-const LSR:   u16 = 5;  // 线状态寄存器
+const IER: u16 = 1; // 中断使能寄存器
+const FCR: u16 = 2; // FIFO 控制寄存器
+const LCR: u16 = 3; // 线控寄存器
+const MCR: u16 = 4; // 调制解调器控制寄存器
+const LSR: u16 = 5; // 线状态寄存器
 
 bitflags! {
     /// 线控寄存器 (LCR) 的标志位
@@ -41,7 +42,7 @@ impl SerialPort {
     pub const fn new(port: u16) -> Self {
         Self { base: port }
     }
-    
+
     /// Initializes the serial port.
     pub fn init(&self) {
         // FIXED: Initialize the serial port
@@ -60,12 +61,13 @@ impl SerialPort {
         // 设置波特率除数
         unsafe {
             Port::new(base + DATA).write(0x03u8); // 低字节
-            Port::new(base + IER).write(0x00u8);   // 高字节
+            Port::new(base + IER).write(0x00u8); // 高字节
         }
 
         // 设置数据格式：8 位数据，无校验，1 位停止位
         unsafe {
-            Port::new(base + LCR).write((LcrFlags::WORD_LENGTH_LSB | LcrFlags::WORD_LENGTH_MSB).bits());
+            Port::new(base + LCR)
+                .write((LcrFlags::WORD_LENGTH_LSB | LcrFlags::WORD_LENGTH_MSB).bits());
         }
 
         // 启用 FIFO，清除 FIFO，设置 14 字节阈值
@@ -85,7 +87,10 @@ impl SerialPort {
             Port::new(base + DATA).write(0xAEu8);
             let test_byte: u8 = Port::new(base + DATA).read();
             if test_byte != 0xAE {
-                panic!("Serial port test failed: sent 0xAE, received 0x{:X}", test_byte);
+                panic!(
+                    "Serial port test failed: sent 0xAE, received 0x{:X}",
+                    test_byte
+                );
             }
         }
 
@@ -114,7 +119,7 @@ impl SerialPort {
         let base = self.base;
         // 等待发送保持寄存器为空
 
-        let mut timeout = 0xFFFFF; // 超时计数器，防止死循环
+        let mut timeout = 0xFFFFFF; // 超时计数器，防止死循环
 
         while !self.is_transmit_empty() {
             core::hint::spin_loop();
@@ -124,7 +129,9 @@ impl SerialPort {
             }
         }
         // 写入数据寄存器
-        unsafe { Port::new(base + DATA).write(data); }
+        unsafe {
+            Port::new(base + DATA).write(data);
+        }
     }
 
     /// Receives a byte on the serial port no wait.
@@ -140,7 +147,6 @@ impl SerialPort {
             None
         }
     }
-    
 }
 
 impl fmt::Write for SerialPort {

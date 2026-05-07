@@ -1,5 +1,6 @@
 use alloc::format;
 
+// pub use manager::fork;
 // use core::f128::consts::E;
 
 // NOTE: import `ysos_syscall` package as `syscall_def` in Cargo.toml
@@ -115,6 +116,10 @@ pub fn dispatcher(context: &mut ProcessContext) {
 
         Syscall::GetTime => {
             context.set_rax(sys_get_time());
+        }
+
+        Syscall::Fork => {
+            crate::proc::fork(context);
         }
 
         // ----------------------------------------------------
