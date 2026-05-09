@@ -231,7 +231,11 @@ impl ProcessInner {
 
         // FIXED: update `rsp` in interrupt stack frame
         // FIXED: set the return value 0 for child with `context.set_rax`
-        let stack_offset = stack_offset_count * STACK_MAX_SIZE;
+
+        // let stack_offset = stack_offset_count * STACK_MAX_SIZE;
+        let parent_stack_base = self.vm().stack.range.start.start_address().as_u64();
+        let child_stack_base = child_vm.stack.range.start.start_address().as_u64();
+        let stack_offset = parent_stack_base - child_stack_base;
 
         child_context.as_mut().stack_frame.stack_pointer -= stack_offset;
         child_context.as_mut().regs.rbp -= stack_offset as usize;

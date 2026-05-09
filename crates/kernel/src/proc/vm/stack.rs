@@ -45,8 +45,8 @@ const KSTACK_INIT_TOP_PAGE: Page<Size4KiB> =
     Page::containing_address(VirtAddr::new(KSTACK_INIT_TOP));
 
 pub struct Stack {
-    pub(super) range: PageRange<Size4KiB>,
-    pub(super) usage: u64,
+    pub range: PageRange<Size4KiB>,
+    pub usage: u64,
 }
 
 impl Stack {

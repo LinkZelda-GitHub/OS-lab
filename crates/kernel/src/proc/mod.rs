@@ -5,17 +5,18 @@ mod paging;
 mod pid;
 mod process;
 pub mod processor;
+pub mod sync;
 mod vm;
 
 use alloc::{string::String, sync::Arc, vec::Vec};
 
 pub use context::ProcessContext;
 pub use data::ProcessData;
-pub use manager::fork;
-use manager::*;
+pub use manager::{fork, get_process_manager, *};
 pub use paging::PageTableContext;
 pub use pid::ProcessId;
-use process::*;
+pub use process::*;
+pub use sync::*;
 use x86_64::{VirtAddr, structures::idt::PageFaultErrorCode};
 use xmas_elf::ElfFile;
 

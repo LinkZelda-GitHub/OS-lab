@@ -4,13 +4,14 @@ use hashbrown::HashMap;
 use spin::RwLock;
 
 use super::*;
-use crate::utils::resource::ResourceSet;
+use crate::{proc::sync::SemaphoreSet, resource::ResourceSet};
 
 #[derive(Debug, Clone)]
 pub struct ProcessData {
     // shared data
     pub(super) env: Arc<RwLock<HashMap<String, String, ahash::RandomState>>>,
     pub(super) resources: Arc<RwLock<ResourceSet>>,
+    pub semaphores: Arc<RwLock<SemaphoreSet>>,
 }
 
 impl Default for ProcessData {
@@ -24,6 +25,7 @@ impl ProcessData {
         Self {
             env: Arc::new(RwLock::new(HashMap::default())),
             resources: Arc::new(RwLock::new(ResourceSet::default())),
+            semaphores: Arc::new(RwLock::new(SemaphoreSet::default())),
         }
     }
 

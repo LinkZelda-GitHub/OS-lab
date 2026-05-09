@@ -47,6 +47,13 @@ impl Semaphore {
         // FIXME: if the count is 0, then push pid into the wait queue
         //          return Block(pid)
         // FIXME: else decrease the count and return Ok
+        if self.count == 0 {
+            self.wait_queue.push_back(pid);
+            SemaphoreResult::Block(pid)
+        } else {
+            self.count -= 1;
+            SemaphoreResult::Ok
+        }
     }
 
     /// Signal the semaphore (release/up/verhogen)
@@ -58,6 +65,12 @@ impl Semaphore {
         //          pop a process from the wait queue
         //          return WakeUp(pid)
         // FIXME: else increase the count and return Ok
+        if let Some(pid) = self.wait_queue.pop_front() {
+            SemaphoreResult::WakeUp(pid)
+        } else {
+            self.count += 1;
+            SemaphoreResult::Ok
+        }
     }
 }
 
@@ -80,6 +93,9 @@ impl SemaphoreSet {
 
         // FIXME: insert a new semaphore into the sems
         //          use `insert(/* ... */).is_none()`
+        self.sems
+            .insert(SemaphoreId::new(key), Mutex::new(Semaphore::new(value)))
+            .is_none()
     }
 
     pub fn remove(&mut self, key: u32) -> bool {
@@ -87,6 +103,7 @@ impl SemaphoreSet {
 
         // FIXME: remove the semaphore from the sems
         //          use `remove(/* ... */).is_some()`
+        self.sems.remove(&SemaphoreId::new(key)).is_some()
     }
 
     /// Wait the semaphore (acquire/down/proberen)
@@ -96,6 +113,11 @@ impl SemaphoreSet {
         // FIXME: try get the semaphore from the sems
         //         then do it's operation
         // FIXME: return NotExist if the semaphore is not exist
+        if let Some(sem) = self.sems.get(&sid) {
+            sem.lock().wait(pid)
+        } else {
+            SemaphoreResult::NotExist
+        }
     }
 
     /// Signal the semaphore (release/up/verhogen)
@@ -105,6 +127,11 @@ impl SemaphoreSet {
         // FIXME: try get the semaphore from the sems
         //         then do it's operation
         // FIXME: return NotExist if the semaphore is not exist
+        if let Some(sem) = self.sems.get(&sid) {
+            sem.lock().signal()
+        } else {
+            SemaphoreResult::NotExist
+        }
     }
 }
 

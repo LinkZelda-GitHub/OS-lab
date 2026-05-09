@@ -22,7 +22,7 @@ pub struct ProcessVm {
     pub(super) page_table: PageTableContext,
 
     // stack is pre-process allocated
-    pub(super) stack: Stack,
+    pub stack: Stack,
 }
 
 impl ProcessVm {

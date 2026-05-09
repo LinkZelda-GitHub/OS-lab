@@ -455,6 +455,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ysos_dinner"
+version = "0.4.0"
+dependencies = [
+ "yslib",
+]
+
+[[package]]
 name = "ysos_elf"
 version = "0.4.0"
 dependencies = [
@@ -465,6 +472,13 @@ dependencies = [
 
 [[package]]
 name = "ysos_factorial"
+version = "0.4.0"
+dependencies = [
+ "yslib",
+]
+
+[[package]]
+name = "ysos_fish"
 version = "0.4.0"
 dependencies = [
  "yslib",
@@ -507,6 +521,13 @@ dependencies = [
  "ysos_boot",
  "ysos_elf",
  "ysos_syscall",
+]
+
+[[package]]
+name = "ysos_mq"
+version = "0.4.0"
+dependencies = [
+ "yslib",
 ]
 
 [[package]]

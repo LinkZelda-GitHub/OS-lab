@@ -1,6 +1,8 @@
+// use alloc::collections::btree_map::Cursor;
 use core::alloc::Layout;
 
 use uefi::{boot::exit, proto::device_path::build::messaging::RestServiceVendorData};
+use x86::current;
 
 use super::SyscallArgs;
 use crate::{proc::*, utils::*};
@@ -120,5 +122,67 @@ pub fn sys_deallocate(args: &SyscallArgs) {
         crate::memory::user::USER_ALLOCATOR
             .lock()
             .deallocate(core::ptr::NonNull::new_unchecked(ptr), *layout);
+    }
+}
+
+pub fn new_sem(key: u32, val: usize) -> usize {
+    let current = get_process_manager().current();
+    let current_inner = current.write();
+    let mut sems = current_inner.semaphores.write();
+    if sems.insert(key, val) { 0 } else { 1 }
+}
+
+pub fn remove_sem(key: u32) -> usize {
+    let current_proc = get_process_manager().current();
+    let current_inner = current_proc.write();
+    let mut sems = current_inner.semaphores.write();
+    if sems.remove(key) { 0 } else { 1 }
+}
+
+pub fn sem_wait(key: u32, context: &mut ProcessContext) {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let manager = get_process_manager();
+        let pid = processor::get_pid();
+        let current_proc = manager.current();
+        let ret = current_proc.read().semaphores.read().wait(key, pid);
+        match ret {
+            SemaphoreResult::Ok => context.set_rax(0),
+            SemaphoreResult::NotExist => context.set_rax(1),
+            SemaphoreResult::Block(pid) => {
+                // FIXME: save, block it, then switch to next
+                //        use `save_current` and `switch_next`
+                manager.save_current(context);
+                manager.current().write().block();
+                manager.switch_next(context);
+            }
+            _ => unreachable!(),
+        }
+    })
+}
+
+pub fn sem_signal(key: u32, context: &mut ProcessContext) {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let manager = get_process_manager();
+
+        let ret = manager.current().read().semaphores.read().signal(key);
+        match ret {
+            crate::proc::SemaphoreResult::Ok => context.set_rax(0),
+            crate::proc::SemaphoreResult::NotExist => context.set_rax(1),
+            crate::proc::SemaphoreResult::WakeUp(woken_pid) => {
+                manager.wake_up(woken_pid, None);
+                context.set_rax(0);
+            }
+            _ => unreachable!(),
+        }
+    })
+}
+
+pub fn sys_sem(args: &SyscallArgs, context: &mut ProcessContext) {
+    match args.arg0 {
+        0 => context.set_rax(new_sem(args.arg1 as u32, args.arg2)),
+        1 => context.set_rax(remove_sem(args.arg1 as u32)),
+        2 => sem_signal(args.arg1 as u32, context),
+        3 => sem_wait(args.arg1 as u32, context),
+        _ => context.set_rax(usize::MAX),
     }
 }

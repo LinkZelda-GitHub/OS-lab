@@ -82,3 +82,8 @@ pub fn sys_time() -> usize {
 pub fn sys_fork() -> u16 {
     syscall!(Syscall::Fork) as u16
 }
+
+#[inline(always)]
+pub fn sys_new_sem(key: u32, value: usize) -> bool {
+    syscall!(Syscall::Sem, 0, key as usize, value) == 0
+}

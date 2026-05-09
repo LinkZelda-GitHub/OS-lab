@@ -17,6 +17,7 @@ pub enum Syscall {
     Exit = 60,
     WaitPid = 61,
 
+    Sem = 65529,     // Added
     GetTime = 65530, // Added
     ListApp = 65531,
     Stat = 65532,

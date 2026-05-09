@@ -123,6 +123,10 @@ pub fn dispatcher(context: &mut ProcessContext) {
             crate::proc::fork(context);
         }
 
+        Syscall::Sem => {
+            sys_sem(&args, context);
+        }
+
         // ----------------------------------------------------
         // NOTE: following syscall examples are implemented
         // ----------------------------------------------------
