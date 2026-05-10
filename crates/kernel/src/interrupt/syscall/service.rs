@@ -149,8 +149,9 @@ pub fn sem_wait(key: u32, context: &mut ProcessContext) {
             SemaphoreResult::Ok => context.set_rax(0),
             SemaphoreResult::NotExist => context.set_rax(1),
             SemaphoreResult::Block(pid) => {
-                // FIXME: save, block it, then switch to next
+                // FIXED: save, block it, then switch to next
                 //        use `save_current` and `switch_next`
+                debug!("Process {} is blocked", pid);
                 manager.save_current(context);
                 manager.current().write().block();
                 manager.switch_next(context);
@@ -169,6 +170,7 @@ pub fn sem_signal(key: u32, context: &mut ProcessContext) {
             crate::proc::SemaphoreResult::Ok => context.set_rax(0),
             crate::proc::SemaphoreResult::NotExist => context.set_rax(1),
             crate::proc::SemaphoreResult::WakeUp(woken_pid) => {
+                debug!("Process {} is woken up", woken_pid);
                 manager.wake_up(woken_pid, None);
                 context.set_rax(0);
             }

@@ -19,7 +19,7 @@ impl SpinLock {
     }
 
     pub fn acquire(&self) {
-        // FIXME: acquire the lock, spin if the lock is not available
+        // FIXED: acquire the lock, spin if the lock is not available
         while self
             .bolt
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
@@ -30,29 +30,9 @@ impl SpinLock {
     }
 
     pub fn release(&self) {
-        // FIXME: release the lock
+        // FIXED: release the lock
         self.bolt.store(false, Ordering::Release);
     }
-}
-
-#[inline(always)]
-pub fn sys_new_sem(key: u32, value: usize) -> bool {
-    syscall!(Syscall::Sem, 0, key as usize, value) == 0
-}
-
-#[inline(always)]
-pub fn sys_remove_sem(key: u32) -> bool {
-    syscall!(Syscall::Sem, 1, key as usize, 0) == 0
-}
-
-#[inline(always)]
-pub fn sys_sem_signal(key: u32) {
-    syscall!(Syscall::Sem, 2, key as usize, 0);
-}
-
-#[inline(always)]
-pub fn sys_sem_wait(key: u32) {
-    syscall!(Syscall::Sem, 3, key as usize, 0);
 }
 
 unsafe impl Sync for SpinLock {} // Why? Check reflection question 5
@@ -72,7 +52,7 @@ impl Semaphore {
         sys_new_sem(self.key, value)
     }
 
-    /* FIXME: other functions with syscall... */
+    /* FIXED: other functions with syscall... */
     #[inline(always)]
     pub fn remove(&self) -> bool {
         sys_remove_sem(self.key)

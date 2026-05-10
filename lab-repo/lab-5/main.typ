@@ -191,6 +191,105 @@ pub fn fork(
 
 == 并发与锁机制
 
+=== 自旋锁
+
+只需要使用 `compare_exchange` 和 `store` 这两个原子操作来维护 `AtomicBool` 变量即可。
+```rs
+pub fn acquire(&self) {
+    // FIXED: acquire the lock, spin if the lock is not available
+    while self
+        .bolt
+        .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+        .is_err()
+    {
+        spin_loop();
+    }
+}
+
+pub fn release(&self) {
+    // FIXED: release the lock
+    self.bolt.store(false, Ordering::Release);
+}
+```
+
+=== 信号量
+
+对于信号量结构体的实现，如下
+```rs
+pub fn wait(&mut self, pid: ProcessId) -> SemaphoreResult {
+    // FIXED: if the count is 0, then push pid into the wait queue
+    //          return Block(pid)
+    // FIXED: else decrease the count and return Ok
+    if self.count == 0 {
+        self.wait_queue.push_back(pid);
+        SemaphoreResult::Block(pid)
+    } else {
+        self.count -= 1;
+        SemaphoreResult::Ok
+    }
+}
+
+pub fn signal(&mut self) -> SemaphoreResult {
+    // FIXED: if the wait queue is not empty
+    //          pop a process from the wait queue
+    //          return WakeUp(pid)
+    // FIXED: else increase the count and return Ok
+    if let Some(pid) = self.wait_queue.pop_front() {
+        SemaphoreResult::WakeUp(pid)
+    } else {
+        self.count += 1;
+        SemaphoreResult::Ok
+    }
+}
+```
+具体而言，`wait` 就是尝试获取锁，如果锁还可以使用则 `-1` 并返回 `Ok`，否则加入该锁的等待队列并返回 `Block`；而 `signal` 则是释放锁，如果等待队列非空则唤醒其中的一个进程，否则让信号量 `+1`。
+
+然后要实现的是保存所有信号量的 `Key-Value` 存储，只需要使用一个 `HashMap` 即可，其他操作使用 `HashMap` 的成员函数即可。这里不再赘述，具体请见 `proc/sync.rs`。
+
+最后要实现的是系统调用中对信号量的 `new`, `remove`, `signal` 以及 `wait` 的处理（包括相关的委托到 `sync.rs` 中的函数，根据返回值来进行对应的处理等），具体实现请见 `syscall/service.rs`。
+
+=== 测试任务
+
+==== 多线程计数器
+
+测试的代码请见 `app/counter/src/main.rs`，对于自旋锁，使用 `lib::sync::SpinLock::new()` 声明一个锁，然后每次自增 `COUNTER_SPIN` 的时候，需要先 `SPIN_LOCK.acquire()` 获取锁，然后修改之后需要 `SPIN_LOCK.release()` 释放锁；对于信号量，先使用 `sys_new_sem(2333, 1)` 声明一个 `key` 为 `2333`，`value` 为 `1` 的信号量，然后每次自增 `COUNTER_SEMAPHORE` 前需要 `sys_sem_wait(2333)` 获取锁，修改之后需要 `sys_sem_signal(2333)` 释放锁。
+
+运行该程序，两个 `COUNTER` 均为 `800`，说明自旋锁和信号量的实现大致无误。
+#image("./images/counter_test.png")
+
+==== 消息队列
+
+代码参见 `app/mq/src/main.rs`，目前的代码可以在生产者生产信息以及消费者取出信息的时候输出日志。设置缓冲区的大小为 `1` 时，可以观察到如下输出
+#image("./images/mq_test_1.png")
+可以看到，`main.rs` 创建了 `16` 个子进程分别作为 `producer` 或者 `consumer`，然后由于此时缓冲区大小为 `1`，可以观察到生产者消费者轮流从缓冲区中加入消息，取出消息，同时插入的消息和取出的消息内容一致，可知实现大致无误。
+
+当我们把缓冲区大小改为 `4` 的时候，可以观察到如下输出
+#image("./images/mq_test_2.png")
+队列的元素计数是否没有超过容量，且可以达到上界 `4`，生产者和消费者能够交替工作，且可以观察到多个生产者或消费者同时进行同种操作的情况，同时取出的信息也和放入的信息对应，到最后消息队列中的元素个数恰好为 `0`。
+
+尝试把日志输出级别改为 `Debug`，然后再次运行可以观察到如下输出，`Process 4 ~ 11` 是 `consumer`，`Process 12 ~ 19` 是 `producer`，当消息队列为空时，所有的 `consumer` 都被阻塞
+#image("./images/mq_test_3.png")
+
+我们可以修改成先 `fork` 出来 `producer`，就可以观察到当消息队列满了的时候，所有的 `producer` 都被阻塞，
+#image("./images/mq_test_4.png")
+从而我们证明了队列的正常工作。
+
+==== 哲学家的晚饭
+
+代码参见 `app/dinner/src/main.rs`，我们的设计是让每个人先拿起左手的筷子，然后再拿起右手的筷子，如果我们把哲学家的思考的时间都调得比较小，然后拿起左筷子之后都会等一段时间再拿右筷子，所有哲学家都拿起了一只筷子，而拿不起第二只筷子，就会造成死锁的情况，如下
+#image("./images/dinner_test_1.png")
+
+
+如果我们适当的调整思考时间和拿起筷子的间隔时间，就能构造出哲学家能吃到饭的情况，如下
+#image("./images/dinner_test_2.png")
+
+如果我们改变其中 `0` 号哲学家的策略为先拿起右筷子，后拿起左筷子，就会由于别人先拿走了它的右筷子，在右筷子可用时左筷子又需要等待，而造成的饥饿现象，如下，其他四个哲学家都吃到了至少一次饭，才轮到 `0` 号哲学家吃饭。
+#image("./images/dinner_test_3.png")
+
+要解决上述出现的问题，我们可以参考实验文档加入一个 `Waiter` 信号量，信号量的个数为 `4`，这样就可以保证至多只有四个哲学家同时就餐，至少有一个哲学家可以获得两个筷子来吃饭，不会造成死锁的问题。我们在构造死锁的情况下加上这个 `Waiter` 信号量之后，可以观察到所有哲学家都正常用餐直到结束。
+#image("./images/dinner_test_4.png")
+
+
 == 思考题
 
 === 在 Lab 2 中设计输入缓冲区时，如果不使用无锁队列实现，而选择使用 `Mutex` 对一个同步队列进行保护，在编写相关函数时需要注意什么问题？考虑在进行 `pop` 操作过程中遇到串口输入中断的情形，尝试描述遇到问题的场景，并提出解决方案。
@@ -252,4 +351,44 @@ t2.join().unwrap();
 
 === `core::hint::spin_loop` 使用的 `pause` 指令和 Lab 4 中的 `x86_64::instructions::hlt` 指令有什么区别？这里为什么不能使用 `hlt` 指令？
 
-`hlt` 指令指的是 `Halt`，这是一个特权指令，会直接让 CPU 休眠直到一个外部中断来临；而 `pause` 指令是一个非特权指令，会让 CPU 会优化执行，提供较少的资源给当前线程，减少自旋等待对 CPU 的消耗。这里由于 `counter` 是一个用户态程序，不能使用 `hlt` 这种特权指令；其次 `hlt` 需要外部中断才会唤醒，如果在关中断等特殊的时候使用可能会造成永久睡眠。
+`hlt` 指令指的是 `Halt`，这是一个特权指令，会直接让 CPU 休眠直到一个外部中断来临；而 `pause` 指令是一个非特权指令，会让 CPU 会优化执行，提供较少的资源给当前线程，减少自旋等待对 CPU 的消耗。这里由于 `counter` 是一个用户态程序，不能使用 `hlt` 这种特权指令；其次 `hlt` 需要外部中断才会唤醒，如果在关中断等特殊的时候使用可能会造成永久睡眠，而 `pause` 会一直自旋检查锁的释放，在实现自旋锁的时候后者的表现更加符合预期。
+
+=== 如果将自旋锁替换为“可睡眠锁”，在内核态和用户态分别会带来哪些收益与风险？(可选思考题)
+
+替换成“可睡眠锁”，从用户态来看，可以提升 CPU 的利用率，睡眠期间会让出 CPU 给其他进程使用，而自旋锁会自旋等待锁，持续占用 CPU；但是“可睡眠锁”也意味着要进行上下文的切换，如果各进程之间交互的频率非常密集，大量的上下文切换开销会大大降低性能。
+
+从内核态而言，等待 `I/O` 或者各种外部中断时，需要等待的时间确实会比较长，这些情况下为了节省 CPU 资源一般都会采用“可睡眠锁”，而且在内核进行进程调度的时候，可以用这种方式让一些低优先级的进程睡眠，让出 CPU 给高优先级任务；风险是需要大量的上下文切换，同时如果在关中断或者抢占时的时候使用了“可睡眠锁”，可能会导致死锁的问题。
+
+== 加分项
+
+=== 实现 `fish` 用户程序
+
+我们的实现方法是：构建一个状态机，每个状态分别表示当前打印到 `fish` 的第几个字符 (`STATE`)，以及当前打印的 `fish` 头朝左还是右 (`DIR`)，维护一个自旋锁 `SPIN_LOCK`，三个子进程取得锁后检查当前状态是否可以输出，如果不行则释放锁后使用 `core::hint::spin_loop` 等待，给其他子进程取得锁来进行输出，输出之后释放锁。
+
+具体的代码参见 `app/fish/src/main.rs`，我们尝试运行这个代码，可以看到程序的输出符合预期，鱼的朝向是随机的，
+#image("./images/fish.png")
+
+=== 尝试和前文不同的其他方法解决哲学家就餐问题，并验证你的方法能够正确解决它，简要介绍你的方法，并给出程序代码和测试结果。
+
+一种和前文不同的方案是：考虑死锁的原因是所有哲学家都拿起了左筷子，而拿不到右筷子，因此我们可以让所有编号为奇数的哲学家先拿起左筷子，而编号为偶数的哲学家先拿起右边筷子，可以证明这样至少有一个哲学家能吃上饭，从而不会造成死锁的情况，代码如下（其实就是加了个编号的判断）
+```rs
+if id % 2 == 0 {
+    sys_sem_wait(CHOPSTICKS[right]);
+    println!("Philosopher {} picked up right chopstick {}", id, right);
+
+    sleep(0x100);
+
+    sys_sem_wait(CHOPSTICKS[left]);
+    println!("Philosopher {} picked up left chopstick {}", id, left);
+} else {
+    sys_sem_wait(CHOPSTICKS[left]);
+    println!("Philosopher {} picked up left chopstick {}", id, left);
+
+    sleep(0x10);
+
+    sys_sem_wait(CHOPSTICKS[right]);
+    println!("Philosopher {} picked up right chopstick {}", id, right);
+}
+```
+然后保持之前构造死锁的设定不变，注释掉 `WAITER` 相关的信号量，进行测试，可以看到哲学家们可以正常吃饭。
+#image("./images/dinner_test_5.png")

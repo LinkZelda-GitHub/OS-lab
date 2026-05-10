@@ -6,11 +6,17 @@ extern crate lib;
 
 static SPIN_LOCK: SpinLock = SpinLock::new();
 
-// 状态机记录
-// STATE: 0=空闲, 1=已输出1个角标, 2=已输出2个角标, 3=已输出3个角标(等待下划线)
+// STATE: 0 = init, 1: printed 1st char, 2 = printed 2nd char,
+// 3 = printed 3rd char
 static mut STATE: usize = 0;
-// DIR: 代表这一轮开头的方向。1 代表 '<' 开头， 2 代表 '>'开头
+// direction: 0 = init, 1: '<' first, 2 = '>' first
 static mut DIR: usize = 0;
+// done count
+static mut DONE: usize = 0;
+// ended flag
+static mut FINISHED: bool = false;
+
+const TARGET: usize = 10; // number of fish
 
 fn main() -> isize {
     let mut pids = [0u16; 3];
@@ -20,7 +26,7 @@ fn main() -> isize {
             match i {
                 0 => fish_less(),
                 1 => fish_greater(),
-                2 => fish_underscore(),
+                2 => fish_underline(),
                 _ => {}
             }
             sys_exit(0);
@@ -33,86 +39,94 @@ fn main() -> isize {
     0
 }
 
+fn should_exit() -> bool {
+    unsafe { FINISHED }
+}
+
 fn fish_less() {
-    for _ in 0..10 {
-        // 打印 10 次
-        loop {
-            SPIN_LOCK.acquire();
-            let mut matched = false;
-            unsafe {
-                if STATE == 0 {
-                    print!("<");
-                    STATE = 1;
-                    DIR = 1;
-                    matched = true;
-                } else if STATE == 1 && DIR == 2 {
-                    print!("<");
-                    STATE = 2;
-                    matched = true;
-                } else if STATE == 2 && DIR == 1 {
-                    print!("<");
-                    STATE = 3;
-                    matched = true;
-                }
-            }
+    loop {
+        SPIN_LOCK.acquire();
+        if should_exit() {
             SPIN_LOCK.release();
-            if matched {
-                break;
+            break;
+        }
+        let mut ok = false;
+        unsafe {
+            if STATE == 0 {
+                print!("<");
+                STATE = 1;
+                DIR = 1;
+                ok = true;
+            } else if STATE == 1 && DIR == 2 {
+                print!("<");
+                STATE = 2;
+                ok = true;
+            } else if STATE == 2 && DIR == 1 {
+                print!("<");
+                STATE = 3;
+                ok = true;
             }
+        }
+        SPIN_LOCK.release();
+        if !ok {
             core::hint::spin_loop();
         }
     }
 }
 
 fn fish_greater() {
-    for _ in 0..10 {
-        // 打印 10 次
-        loop {
-            SPIN_LOCK.acquire();
-            let mut matched = false;
-            unsafe {
-                if STATE == 0 {
-                    print!(">");
-                    STATE = 1;
-                    DIR = 2;
-                    matched = true;
-                } else if STATE == 1 && DIR == 1 {
-                    print!(">");
-                    STATE = 2;
-                    matched = true;
-                } else if STATE == 2 && DIR == 2 {
-                    print!(">");
-                    STATE = 3;
-                    matched = true;
-                }
-            }
+    loop {
+        SPIN_LOCK.acquire();
+        if should_exit() {
             SPIN_LOCK.release();
-            if matched {
-                break;
+            break;
+        }
+        let mut ok = false;
+        unsafe {
+            if STATE == 0 {
+                print!(">");
+                STATE = 1;
+                DIR = 2;
+                ok = true;
+            } else if STATE == 1 && DIR == 1 {
+                print!(">");
+                STATE = 2;
+                ok = true;
+            } else if STATE == 2 && DIR == 2 {
+                print!(">");
+                STATE = 3;
+                ok = true;
             }
+        }
+        SPIN_LOCK.release();
+        if !ok {
             core::hint::spin_loop();
         }
     }
 }
 
-fn fish_underscore() {
-    for _ in 0..10 {
-        loop {
-            SPIN_LOCK.acquire();
-            let mut matched = false;
-            unsafe {
-                // 只有等前三个字符打印满了，才允许放行打印 '_'
-                if STATE == 3 {
-                    println!("_");
-                    STATE = 0;
-                    DIR = 0;
-                    matched = true;
+fn fish_underline() {
+    loop {
+        SPIN_LOCK.acquire();
+        let mut ok = false;
+        unsafe {
+            if STATE == 3 {
+                println!("_");
+                STATE = 0;
+                DIR = 0;
+                DONE += 1;
+                if DONE >= TARGET {
+                    FINISHED = true;
                 }
+                ok = true;
             }
-            SPIN_LOCK.release();
-            if matched {
+        }
+        SPIN_LOCK.release();
+        if ok {
+            if should_exit() {
                 break;
             }
+        } else {
             core::hint::spin_loop();
         }
     }

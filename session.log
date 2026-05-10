@@ -1,0 +1,2694 @@
+Script started on 2026-05-09 19:33:38+08:00 [TERM="xterm-256color" TTY="/dev/pts/5" COLUMNS="96" LINES="30"]
+[?2004h(base) ]0;linkzelda@LAPTOP-QFAEHS2I: ~/OS-lab[01;32mlinkzelda@LAPTOP-QFAEHS2I[00m:[01;34m~/OS-lab[00m$ make run
+[?2004lcd crates/boot && cargo build --release
+[1m[33mwarning[0m[1m: unused imports: `boxed::Box` and `vec`[0m
+ [1m[94m--> [0mcrates/boot/src/main.rs:9:13
+  [1m[94m|[0m
+[1m[94m9[0m [1m[94m|[0m use alloc::{boxed::Box, vec};
+  [1m[94m|[0m             [1m[33m^^^^^^^^^^[0m  [1m[33m^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: unnecessary `unsafe` block[0m
+  [1m[94m--> [0mcrates/boot/src/main.rs:46:5
+   [1m[94m|[0m
+[1m[94m46[0m [1m[94m|[0m     unsafe {
+   [1m[94m|[0m     [1m[33m^^^^^^[0m [1m[33munnecessary `unsafe` block[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_unsafe)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: struct `Config` is never constructed[0m
+ [1m[94m--> [0mcrates/boot/src/config.rs:5:12
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m pub struct Config<'a> {
+  [1m[94m|[0m            [1m[33m^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: constant `DEFAULT_CONFIG` is never used[0m
+  [1m[94m--> [0mcrates/boot/src/config.rs:25:7
+   [1m[94m|[0m
+[1m[94m25[0m [1m[94m|[0m const DEFAULT_CONFIG: Config = Config {
+   [1m[94m|[0m       [1m[33m^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: associated items `parse` and `process` are never used[0m
+  [1m[94m--> [0mcrates/boot/src/config.rs:37:12
+   [1m[94m|[0m
+[1m[94m36[0m [1m[94m|[0m impl<'a> Config<'a> {
+   [1m[94m|[0m [1m[94m-------------------[0m [1m[94massociated items in this implementation[0m
+[1m[94m37[0m [1m[94m|[0m     pub fn parse(content: &'a [u8]) -> Self {
+   [1m[94m|[0m            [1m[33m^^^^^[0m
+[1m[94m...[0m
+[1m[94m54[0m [1m[94m|[0m     fn process(&mut self, key: &str, value: &'a str) {
+   [1m[94m|[0m        [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m: `ysos_boot` (bin "ysos_boot") generated 5 warnings (run `cargo fix --bin "ysos_boot" -p ysos_boot` to apply 1 suggestion)
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.17s
+cp target/x86_64-unknown-uefi/release/ysos_boot.efi esp/EFI/BOOT/BOOTX64.EFI
+cd crates/kernel && cargo build --release -Z json-target-spec
+[1m[33mwarning[0m[1m: unused import: `LevelFilter`[0m
+ [1m[94m--> [0mcrates/kernel/src/utils/logger.rs:1:29
+  [1m[94m|[0m
+[1m[94m1[0m [1m[94m|[0m use log::{Metadata, Record, LevelFilter, SetLoggerError};
+  [1m[94m|[0m                             [1m[33m^^^^^^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: unused import: `alloc::format`[0m
+  [1m[94m--> [0mcrates/kernel/src/utils/mod.rs:11:5
+   [1m[94m|[0m
+[1m[94m11[0m [1m[94m|[0m use alloc::format;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `x86::vmx::vmcs::ro::EXIT_QUALIFICATION`[0m
+  [1m[94m--> [0mcrates/kernel/src/utils/mod.rs:15:5
+   [1m[94m|[0m
+[1m[94m15[0m [1m[94m|[0m use x86::vmx::vmcs::ro::EXIT_QUALIFICATION;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `core::mem`[0m
+  [1m[94m--> [0mcrates/kernel/src/lib.rs:21:5
+   [1m[94m|[0m
+[1m[94m21[0m [1m[94m|[0m use core::mem;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `log::warn`[0m
+ [1m[94m--> [0mcrates/kernel/src/drivers/input.rs:5:5
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m use log::warn;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `uefi::proto::console::serial::Serial`[0m
+ [1m[94m--> [0mcrates/kernel/src/drivers/input.rs:6:5
+  [1m[94m|[0m
+[1m[94m6[0m [1m[94m|[0m use uefi::proto::console::serial::Serial;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::memory::physical_to_virtual`[0m
+  [1m[94m--> [0mcrates/kernel/src/interrupt/apic/xapic.rs:11:5
+   [1m[94m|[0m
+[1m[94m11[0m [1m[94m|[0m use crate::memory::physical_to_virtual;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unnecessary parentheses around method argument[0m
+  [1m[94m--> [0mcrates/kernel/src/interrupt/apic/xapic.rs:83:32
+   [1m[94m|[0m
+[1m[94m83[0m [1m[94m|[0m             svr.set_bits(0..8, (Interrupts::IrqBase as u32 + Irq::Spurious as u32));
+   [1m[94m|[0m                                [1m[33m^[0m                                                 [1m[33m^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+[1m[96mhelp[0m: remove these parentheses
+   [1m[94m|[0m
+[1m[94m83[0m [91m- [0m            svr.set_bits(0..8, [91m([0mInterrupts::IrqBase as u32 + Irq::Spurious as u32[91m)[0m);
+[1m[94m83[0m [92m+ [0m            svr.set_bits(0..8, Interrupts::IrqBase as u32 + Irq::Spurious as u32[92m [0m);
+   [1m[94m|[0m
+
+[1m[33mwarning[0m[1m: unused import: `crate::as_handler`[0m
+ [1m[94m--> [0mcrates/kernel/src/interrupt/clock.rs:3:5
+  [1m[94m|[0m
+[1m[94m3[0m [1m[94m|[0m use crate::as_handler;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `core::sync::atomic::AtomicU64`[0m
+ [1m[94m--> [0mcrates/kernel/src/interrupt/clock.rs:6:5
+  [1m[94m|[0m
+[1m[94m6[0m [1m[94m|[0m use core::sync::atomic::AtomicU64;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused imports: `Debug`, `Error`, and `Formatter`[0m
+ [1m[94m--> [0mcrates/kernel/src/interrupt/clock.rs:7:17
+  [1m[94m|[0m
+[1m[94m7[0m [1m[94m|[0m use core::fmt::{Debug, Error, Formatter};
+  [1m[94m|[0m                 [1m[33m^^^^^[0m  [1m[33m^^^^^[0m  [1m[33m^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused imports: `AtomicUsize` and `Ordering`[0m
+  [1m[94m--> [0mcrates/kernel/src/interrupt/clock.rs:10:26
+   [1m[94m|[0m
+[1m[94m10[0m [1m[94m|[0m use core::sync::atomic::{AtomicUsize, Ordering};
+   [1m[94m|[0m                          [1m[33m^^^^^^^^^^^[0m  [1m[33m^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `x86::current`[0m
+ [1m[94m--> [0mcrates/kernel/src/interrupt/exceptions.rs:1:5
+  [1m[94m|[0m
+[1m[94m1[0m [1m[94m|[0m use x86::current;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused imports: `VirtAddr` and `registers::control::Cr2`[0m
+ [1m[94m--> [0mcrates/kernel/src/interrupt/exceptions.rs:3:5
+  [1m[94m|[0m
+[1m[94m3[0m [1m[94m|[0m     VirtAddr,
+  [1m[94m|[0m     [1m[33m^^^^^^^^[0m
+[1m[94m4[0m [1m[94m|[0m     registers::control::Cr2,
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `uefi::proto::console::text::Input`[0m
+ [1m[94m--> [0mcrates/kernel/src/interrupt/serial.rs:2:5
+  [1m[94m|[0m
+[1m[94m2[0m [1m[94m|[0m use uefi::proto::console::text::Input;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `try_pop_key`[0m
+ [1m[94m--> [0mcrates/kernel/src/interrupt/serial.rs:4:39
+  [1m[94m|[0m
+[1m[94m4[0m [1m[94m|[0m use crate::drivers::input::{push_key, try_pop_key};
+  [1m[94m|[0m                                       [1m[33m^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused imports: `boot::exit` and `proto::device_path::build::messaging::RestServiceVendorData`[0m
+ [1m[94m--> [0mcrates/kernel/src/interrupt/syscall/service.rs:4:12
+  [1m[94m|[0m
+[1m[94m4[0m [1m[94m|[0m use uefi::{boot::exit, proto::device_path::build::messaging::RestServiceVendorData};
+  [1m[94m|[0m            [1m[33m^^^^^^^^^^[0m  [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `x86::current`[0m
+ [1m[94m--> [0mcrates/kernel/src/interrupt/syscall/service.rs:5:5
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m use x86::current;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `utils::*`[0m
+ [1m[94m--> [0mcrates/kernel/src/interrupt/syscall/service.rs:8:22
+  [1m[94m|[0m
+[1m[94m8[0m [1m[94m|[0m use crate::{proc::*, utils::*};
+  [1m[94m|[0m                      [1m[33m^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `frame`[0m
+ [1m[94m--> [0mcrates/kernel/src/memory/frames.rs:6:81
+  [1m[94m|[0m
+[1m[94m6[0m [1m[94m|[0m     structures::paging::{FrameAllocator, FrameDeallocator, PhysFrame, Size4KiB, frame},
+  [1m[94m|[0m                                                                                 [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: unnecessary parentheses around closure body[0m
+  [1m[94m--> [0mcrates/kernel/src/memory/frames.rs:79:54
+   [1m[94m|[0m
+[1m[94m79[0m [1m[94m|[0m [1m[94m...[0m   .flat_map(|r| (0..r.page_count).map(move |v| (v * 4096 + r.phys_start))) // create `PhysFr[1m[94m...[0m
+   [1m[94m|[0m                                                    [1m[33m^[0m                       [1m[33m^[0m
+   [1m[94m|[0m
+[1m[96mhelp[0m: remove these parentheses
+   [1m[94m|[0m
+[1m[94m79[0m [91m- [0m        .flat_map(|r| (0..r.page_count).map(move |v| [91m([0mv * 4096 + r.phys_start[91m)[0m)) // create `PhysFrame` types from the start addresses
+[1m[94m79[0m [92m+ [0m        .flat_map(|r| (0..r.page_count).map(move |v| v * 4096 + r.phys_start[92m [0m)) // create `PhysFrame` types from the start addresses
+   [1m[94m|[0m
+
+[1m[33mwarning[0m[1m: unused import: `uefi::cstr16`[0m
+ [1m[94m--> [0mcrates/kernel/src/proc/context.rs:1:5
+  [1m[94m|[0m
+[1m[94m1[0m [1m[94m|[0m use uefi::cstr16;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `get_selector`[0m
+ [1m[94m--> [0mcrates/kernel/src/proc/context.rs:7:19
+  [1m[94m|[0m
+[1m[94m7[0m [1m[94m|[0m     memory::gdt::{get_selector, get_user_selector},
+  [1m[94m|[0m                   [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `ffi::IntoStringError`[0m
+ [1m[94m--> [0mcrates/kernel/src/proc/manager.rs:3:5
+  [1m[94m|[0m
+[1m[94m3[0m [1m[94m|[0m     ffi::IntoStringError,
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `boot::entry_point`[0m
+ [1m[94m--> [0mcrates/kernel/src/proc/manager.rs:9:5
+  [1m[94m|[0m
+[1m[94m9[0m [1m[94m|[0m use boot::entry_point;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `log::set_logger`[0m
+  [1m[94m--> [0mcrates/kernel/src/proc/manager.rs:11:5
+   [1m[94m|[0m
+[1m[94m11[0m [1m[94m|[0m use log::set_logger;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `uefi::proto::pi`[0m
+  [1m[94m--> [0mcrates/kernel/src/proc/manager.rs:13:5
+   [1m[94m|[0m
+[1m[94m13[0m [1m[94m|[0m use uefi::proto::pi;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `x86::current`[0m
+  [1m[94m--> [0mcrates/kernel/src/proc/manager.rs:14:5
+   [1m[94m|[0m
+[1m[94m14[0m [1m[94m|[0m use x86::current;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `x86_64::structures::paging::page`[0m
+  [1m[94m--> [0mcrates/kernel/src/proc/manager.rs:15:5
+   [1m[94m|[0m
+[1m[94m15[0m [1m[94m|[0m use x86_64::structures::paging::page;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused imports: `ALLOCATOR`, `HEAP_SIZE`, `get_frame_alloc_for_sure`, `self`, and `self`[0m
+  [1m[94m--> [0mcrates/kernel/src/proc/manager.rs:21:9
+   [1m[94m|[0m
+[1m[94m21[0m [1m[94m|[0m         self, PAGE_SIZE,
+   [1m[94m|[0m         [1m[33m^^^^[0m
+[1m[94m22[0m [1m[94m|[0m         allocator::{ALLOCATOR, HEAP_SIZE},
+   [1m[94m|[0m                     [1m[33m^^^^^^^^^[0m  [1m[33m^^^^^^^^^[0m
+[1m[94m23[0m [1m[94m|[0m         get_frame_alloc_for_sure,
+   [1m[94m|[0m         [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[1m[94m24[0m [1m[94m|[0m     },
+[1m[94m25[0m [1m[94m|[0m     proc::{self, vm::stack},
+   [1m[94m|[0m            [1m[33m^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `x86_64::instructions::interrupts`[0m
+  [1m[94m--> [0mcrates/kernel/src/proc/manager.rs:43:5
+   [1m[94m|[0m
+[1m[94m43[0m [1m[94m|[0m use x86_64::instructions::interrupts;
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `slice`[0m
+ [1m[94m--> [0mcrates/kernel/src/proc/process.rs:2:5
+  [1m[94m|[0m
+[1m[94m2[0m [1m[94m|[0m     slice,
+  [1m[94m|[0m     [1m[33m^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused imports: `*`, `mapper::MapToError`, and `page::PageRange`[0m
+ [1m[94m--> [0mcrates/kernel/src/proc/process.rs:8:34
+  [1m[94m|[0m
+[1m[94m8[0m [1m[94m|[0m use x86_64::structures::paging::{mapper::MapToError, page::PageRange, *};
+  [1m[94m|[0m                                  [1m[33m^^^^^^^^^^^^^^^^^^[0m  [1m[33m^^^^^^^^^^^^^^^[0m  [1m[33m^[0m
+
+[1m[33mwarning[0m[1m: unused imports: `STACK_MAX_SIZE`, `memory::*`, and `self`[0m
+  [1m[94m--> [0mcrates/kernel/src/proc/process.rs:12:5
+   [1m[94m|[0m
+[1m[94m12[0m [1m[94m|[0m     memory::*,
+   [1m[94m|[0m     [1m[33m^^^^^^^^^[0m
+[1m[94m13[0m [1m[94m|[0m     proc::vm::stack::{self, STACK_MAX_SIZE},
+   [1m[94m|[0m                       [1m[33m^^^^[0m  [1m[33m^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `page::*`[0m
+ [1m[94m--> [0mcrates/kernel/src/proc/vm/mod.rs:6:26
+  [1m[94m|[0m
+[1m[94m6[0m [1m[94m|[0m     structures::paging::{page::*, *},
+  [1m[94m|[0m                          [1m[33m^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `core::iter::Cycle`[0m
+ [1m[94m--> [0mcrates/kernel/src/proc/vm/stack.rs:1:5
+  [1m[94m|[0m
+[1m[94m1[0m [1m[94m|[0m use core::iter::Cycle;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `uefi::boot::PAGE_SIZE`[0m
+ [1m[94m--> [0mcrates/kernel/src/proc/vm/stack.rs:4:5
+  [1m[94m|[0m
+[1m[94m4[0m [1m[94m|[0m use uefi::boot::PAGE_SIZE;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `x86::current`[0m
+ [1m[94m--> [0mcrates/kernel/src/proc/vm/stack.rs:5:5
+  [1m[94m|[0m
+[1m[94m5[0m [1m[94m|[0m use x86::current;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `pid`[0m
+  [1m[94m--> [0mcrates/kernel/src/proc/vm/stack.rs:14:23
+   [1m[94m|[0m
+[1m[94m14[0m [1m[94m|[0m     proc::{ProcessId, pid},
+   [1m[94m|[0m                       [1m[33m^^^[0m
+
+[1m[33mwarning[0m[1m: unused import: `vec::Vec`[0m
+  [1m[94m--> [0mcrates/kernel/src/proc/mod.rs:11:40
+   [1m[94m|[0m
+[1m[94m11[0m [1m[94m|[0m use alloc::{string::String, sync::Arc, vec::Vec};
+   [1m[94m|[0m                                        [1m[33m^^^^^^^^[0m
+
+[1m[33mwarning[0m[1m: unnecessary `unsafe` block[0m
+  [1m[94m--> [0mcrates/kernel/src/utils/func.rs:17:9
+   [1m[94m|[0m
+[1m[94m17[0m [1m[94m|[0m         unsafe {
+   [1m[94m|[0m         [1m[33m^^^^^^[0m [1m[33munnecessary `unsafe` block[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_unsafe)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[E0133][0m[1m: call to unsafe function `x86_64::structures::idt::EntryOptions::set_stack_index` is unsafe and requires unsafe block[0m
+  [1m[94m--> [0mcrates/kernel/src/interrupt/clock.rs:13:5
+   [1m[94m|[0m
+[1m[94m13[0m [1m[94m|[0m [1m[33m/[0m     idt[Interrupts::IrqBase as u8 + Irq::Timer as u8]
+[1m[94m14[0m [1m[94m|[0m [1m[33m|[0m         .set_handler_fn(clock_handler)
+[1m[94m15[0m [1m[94m|[0m [1m[33m|[0m         .set_stack_index(gdt::CLOCK_IST_INDEX);
+   [1m[94m|[0m [1m[33m|______________________________________________^[0m [1m[33mcall to unsafe function[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: consult the function's documentation for information on how to avoid undefined behavior
+[1m[92mnote[0m: an unsafe function restricts its caller, but its body is safe by default
+  [1m[94m--> [0mcrates/kernel/src/interrupt/clock.rs:12:1
+   [1m[94m|[0m
+[1m[94m12[0m [1m[94m|[0m pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
+   [1m[94m|[0m [1m[92m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+   [1m[94m= [0m[1mnote[0m: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/unsafe-op-in-unsafe-fn.html>
+   [1m[94m= [0m[1mnote[0m: `#[warn(unsafe_op_in_unsafe_fn)]` (part of `#[warn(rust_2024_compatibility)]`) on by default
+
+[1m[33mwarning[E0133][0m[1m: call to unsafe function `x86_64::structures::idt::EntryOptions::set_stack_index` is unsafe and requires unsafe block[0m
+  [1m[94m--> [0mcrates/kernel/src/interrupt/exceptions.rs:12:5
+   [1m[94m|[0m
+[1m[94m12[0m [1m[94m|[0m [1m[33m/[0m     idt.double_fault
+[1m[94m13[0m [1m[94m|[0m [1m[33m|[0m         .set_handler_fn(double_fault_handler)
+[1m[94m14[0m [1m[94m|[0m [1m[33m|[0m         .set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
+   [1m[94m|[0m [1m[33m|_____________________________________________________^[0m [1m[33mcall to unsafe function[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: consult the function's documentation for information on how to avoid undefined behavior
+[1m[92mnote[0m: an unsafe function restricts its caller, but its body is safe by default
+  [1m[94m--> [0mcrates/kernel/src/interrupt/exceptions.rs:10:1
+   [1m[94m|[0m
+[1m[94m10[0m [1m[94m|[0m pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
+   [1m[94m|[0m [1m[92m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+   [1m[94m= [0m[1mnote[0m: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/unsafe-op-in-unsafe-fn.html>
+
+[1m[33mwarning[E0133][0m[1m: call to unsafe function `x86_64::structures::idt::EntryOptions::set_stack_index` is unsafe and requires unsafe block[0m
+  [1m[94m--> [0mcrates/kernel/src/interrupt/exceptions.rs:15:5
+   [1m[94m|[0m
+[1m[94m15[0m [1m[94m|[0m [1m[33m/[0m     idt.page_fault
+[1m[94m16[0m [1m[94m|[0m [1m[33m|[0m         .set_handler_fn(page_fault_handler)
+[1m[94m17[0m [1m[94m|[0m [1m[33m|[0m         .set_stack_index(gdt::PAGE_FAULT_IST_INDEX);
+   [1m[94m|[0m [1m[33m|___________________________________________________^[0m [1m[33mcall to unsafe function[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: consult the function's documentation for information on how to avoid undefined behavior
+   [1m[94m= [0m[1mnote[0m: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/unsafe-op-in-unsafe-fn.html>
+
+[1m[33mwarning[E0133][0m[1m: call to unsafe function `x86_64::instructions::port::PortGeneric::<T, A>::write` is unsafe and requires unsafe block[0m
+  [1m[94m--> [0mcrates/kernel/src/interrupt/serial.rs:16:5
+   [1m[94m|[0m
+[1m[94m16[0m [1m[94m|[0m     lcr.write(0x03);
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^[0m [1m[33mcall to unsafe function[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: consult the function's documentation for information on how to avoid undefined behavior
+[1m[92mnote[0m: an unsafe function restricts its caller, but its body is safe by default
+  [1m[94m--> [0mcrates/kernel/src/interrupt/serial.rs:7:1
+   [1m[94m|[0m
+[1m[94m 7[0m [1m[94m|[0m pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
+   [1m[94m|[0m [1m[92m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+   [1m[94m= [0m[1mnote[0m: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/unsafe-op-in-unsafe-fn.html>
+
+[1m[33mwarning[E0133][0m[1m: call to unsafe function `x86_64::instructions::port::PortGeneric::<T, A>::write` is unsafe and requires unsafe block[0m
+  [1m[94m--> [0mcrates/kernel/src/interrupt/serial.rs:19:5
+   [1m[94m|[0m
+[1m[94m19[0m [1m[94m|[0m     ier.write(0x01);
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^[0m [1m[33mcall to unsafe function[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: consult the function's documentation for information on how to avoid undefined behavior
+   [1m[94m= [0m[1mnote[0m: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/unsafe-op-in-unsafe-fn.html>
+
+[1m[33mwarning[0m[1m: unused variable: `pid`[0m
+   [1m[94m--> [0mcrates/kernel/src/interrupt/syscall/service.rs:151:36
+    [1m[94m|[0m
+[1m[94m151[0m [1m[94m|[0m             SemaphoreResult::Block(pid) => {
+    [1m[94m|[0m                                    [1m[33m^^^[0m [1m[33mhelp: if this is intentional, prefix it with an underscore: `_pid`[0m
+    [1m[94m|[0m
+    [1m[94m= [0m[1mnote[0m: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[E0133][0m[1m: call to unsafe function `x86_64::structures::idt::EntryOptions::set_stack_index` is unsafe and requires unsafe block[0m
+  [1m[94m--> [0mcrates/kernel/src/interrupt/syscall/mod.rs:24:19
+   [1m[94m|[0m
+[1m[94m24[0m [1m[94m|[0m       let handler = idt[consts::Interrupts::Syscall as u8]
+   [1m[94m|[0m [1m[33m ___________________^[0m
+[1m[94m25[0m [1m[94m|[0m [1m[33m|[0m         .set_handler_fn(syscall_handler)
+[1m[94m26[0m [1m[94m|[0m [1m[33m|[0m         .set_stack_index(gdt::SYSCALL_IST_INDEX);
+   [1m[94m|[0m [1m[33m|________________________________________________^[0m [1m[33mcall to unsafe function[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: consult the function's documentation for information on how to avoid undefined behavior
+[1m[92mnote[0m: an unsafe function restricts its caller, but its body is safe by default
+  [1m[94m--> [0mcrates/kernel/src/interrupt/syscall/mod.rs:21:1
+   [1m[94m|[0m
+[1m[94m21[0m [1m[94m|[0m pub unsafe fn register_idt(idt: &mut InterruptDescriptorTable) {
+   [1m[94m|[0m [1m[92m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+   [1m[94m= [0m[1mnote[0m: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/unsafe-op-in-unsafe-fn.html>
+
+[1m[33mwarning[E0133][0m[1m: call to unsafe function `linked_list_allocator::Heap::deallocate` is unsafe and requires unsafe block[0m
+  [1m[94m--> [0mcrates/kernel/src/memory/allocator.rs:60:13
+   [1m[94m|[0m
+[1m[94m60[0m [1m[94m|[0m             self.0.lock().deallocate(core::ptr::NonNull::new(ptr).unwrap(), layout)
+   [1m[94m|[0m             [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[33mcall to unsafe function[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: consult the function's documentation for information on how to avoid undefined behavior
+[1m[92mnote[0m: an unsafe function restricts its caller, but its body is safe by default
+  [1m[94m--> [0mcrates/kernel/src/memory/allocator.rs:57:5
+   [1m[94m|[0m
+[1m[94m57[0m [1m[94m|[0m     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
+   [1m[94m|[0m     [1m[92m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+   [1m[94m= [0m[1mnote[0m: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/unsafe-op-in-unsafe-fn.html>
+
+[1m[33mwarning[0m[1m: unused `core::result::Result` that must be used[0m
+  [1m[94m--> [0mcrates/kernel/src/lib.rs:45:5
+   [1m[94m|[0m
+[1m[94m45[0m [1m[94m|[0m     logger::init("Trace"); // init logger system
+   [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: this `Result` may be an `Err` variant, which should be handled
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_must_use)]` (part of `#[warn(unused)]`) on by default
+[1m[96mhelp[0m: use `let _ = ...` to ignore the resulting value
+   [1m[94m|[0m
+[1m[94m45[0m [1m[94m| [0m    [92mlet _ = [0mlogger::init("Trace"); // init logger system
+   [1m[94m|[0m     [92m+++++++[0m
+
+[1m[33mwarning[0m[1m: hiding a lifetime that's elided elsewhere is confusing[0m
+  [1m[94m--> [0mcrates/kernel/src/proc/process.rs:41:18
+   [1m[94m|[0m
+[1m[94m41[0m [1m[94m|[0m     pub fn write(&self) -> RwLockWriteGuard<ProcessInner> {
+   [1m[94m|[0m                  [1m[33m^^^^^[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[33mthe same lifetime is hidden here[0m
+   [1m[94m|[0m                  [1m[33m|[0m
+   [1m[94m|[0m                  [1m[33mthe lifetime is elided here[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mhelp[0m: the same lifetime is referred to in inconsistent ways, making the signature confusing
+   [1m[94m= [0m[1mnote[0m: `#[warn(mismatched_lifetime_syntaxes)]` on by default
+[1m[96mhelp[0m: use `'_` for type paths
+   [1m[94m|[0m
+[1m[94m41[0m [1m[94m| [0m    pub fn write(&self) -> RwLockWriteGuard<[92m'_, [0mProcessInner> {
+   [1m[94m|[0m                                             [92m+++[0m
+
+[1m[33mwarning[0m[1m: hiding a lifetime that's elided elsewhere is confusing[0m
+  [1m[94m--> [0mcrates/kernel/src/proc/process.rs:46:17
+   [1m[94m|[0m
+[1m[94m46[0m [1m[94m|[0m     pub fn read(&self) -> RwLockReadGuard<ProcessInner> {
+   [1m[94m|[0m                 [1m[33m^^^^^[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m [1m[33mthe same lifetime is hidden here[0m
+   [1m[94m|[0m                 [1m[33m|[0m
+   [1m[94m|[0m                 [1m[33mthe lifetime is elided here[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mhelp[0m: the same lifetime is referred to in inconsistent ways, making the signature confusing
+[1m[96mhelp[0m: use `'_` for type paths
+   [1m[94m|[0m
+[1m[94m46[0m [1m[94m| [0m    pub fn read(&self) -> RwLockReadGuard<[92m'_, [0mProcessInner> {
+   [1m[94m|[0m                                           [92m+++[0m
+
+[1mFor more information about this error, try `rustc --explain E0133`.[0m
+[1m[33mwarning[0m: `ysos_kernel` (lib) generated 52 warnings (run `cargo fix --lib -p ysos_kernel` to apply 48 suggestions)
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.12s
+cp target/x86_64-unknown-none/release/ysos_kernel esp/KERNEL.ELF
+Building counter
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.08s
+Building mq
+[1m[33mwarning[0m[1m: unnecessary `unsafe` block[0m
+  [1m[94m--> [0mcrates/app/mq/src/main.rs:81:25
+   [1m[94m|[0m
+[1m[94m77[0m [1m[94m|[0m         unsafe {
+   [1m[94m|[0m         [1m[94m------[0m [1m[94mbecause it's nested under this `unsafe` block[0m
+[1m[94m...[0m
+[1m[94m81[0m [1m[94m|[0m             let count = unsafe { core::ptr::read_volatile(&raw const MSG_COUNT) };
+   [1m[94m|[0m                         [1m[33m^^^^^^[0m [1m[33munnecessary `unsafe` block[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_unsafe)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m[1m: unnecessary `unsafe` block[0m
+   [1m[94m--> [0mcrates/app/mq/src/main.rs:102:25
+    [1m[94m|[0m
+[1m[94m 98[0m [1m[94m|[0m         unsafe {
+    [1m[94m|[0m         [1m[94m------[0m [1m[94mbecause it's nested under this `unsafe` block[0m
+[1m[94m...[0m
+[1m[94m102[0m [1m[94m|[0m             let count = unsafe { core::ptr::read_volatile(&raw const MSG_COUNT) };
+    [1m[94m|[0m                         [1m[33m^^^^^^[0m [1m[33munnecessary `unsafe` block[0m
+
+[1m[33mwarning[0m: `ysos_mq` (bin "ysos_mq") generated 2 warnings
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.09s
+Building fork_test
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.08s
+Building sleep
+[1m[33mwarning[0m[1m: unnecessary parentheses around `if` condition[0m
+  [1m[94m--> [0mcrates/app/sleep/src/main.rs:13:12
+   [1m[94m|[0m
+[1m[94m13[0m [1m[94m|[0m         if (current - start >= dur) {
+   [1m[94m|[0m            [1m[33m^[0m                      [1m[33m^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+[1m[96mhelp[0m: remove these parentheses
+   [1m[94m|[0m
+[1m[94m13[0m [91m- [0m        if [91m([0mcurrent - start >= dur[91m)[0m {
+[1m[94m13[0m [92m+ [0m        if current - start >= dur {
+   [1m[94m|[0m
+
+[1m[33mwarning[0m[1m: variable `T` should have a snake case name[0m
+  [1m[94m--> [0mcrates/app/sleep/src/main.rs:20:13
+   [1m[94m|[0m
+[1m[94m20[0m [1m[94m|[0m     let mut T = 5i32;
+   [1m[94m|[0m             [1m[33m^[0m [1m[33mhelp: convert the identifier to snake case: `t`[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(non_snake_case)]` (part of `#[warn(nonstandard_style)]`) on by default
+
+[1m[33mwarning[0m: `ysos_sleep` (bin "ysos_sleep") generated 2 warnings (run `cargo fix --bin "ysos_sleep" -p ysos_sleep` to apply 1 suggestion)
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.08s
+Building hello
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.08s
+Building dinner
+[1m[33mwarning[0m[1m: unnecessary parentheses around `if` condition[0m
+  [1m[94m--> [0mcrates/app/dinner/src/main.rs:55:12
+   [1m[94m|[0m
+[1m[94m55[0m [1m[94m|[0m         if (current - start >= dur) {
+   [1m[94m|[0m            [1m[33m^[0m                      [1m[33m^[0m
+   [1m[94m|[0m
+   [1m[94m= [0m[1mnote[0m: `#[warn(unused_parens)]` (part of `#[warn(unused)]`) on by default
+[1m[96mhelp[0m: remove these parentheses
+   [1m[94m|[0m
+[1m[94m55[0m [91m- [0m        if [91m([0mcurrent - start >= dur[91m)[0m {
+[1m[94m55[0m [92m+ [0m        if current - start >= dur {
+   [1m[94m|[0m
+
+[1m[33mwarning[0m: `ysos_dinner` (bin "ysos_dinner") generated 1 warning (run `cargo fix --bin "ysos_dinner" -p ysos_dinner` to apply 1 suggestion)
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.09s
+Building fish
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.09s
+Building factorial
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.07s
+Building sh
+[1m[33mwarning[0m[1m: unused import: `core::arch::x86_64::_SIDD_LEAST_SIGNIFICANT`[0m
+ [1m[94m--> [0mcrates/app/sh/src/main.rs:4:5
+  [1m[94m|[0m
+[1m[94m4[0m [1m[94m|[0m use core::arch::x86_64::_SIDD_LEAST_SIGNIFICANT;
+  [1m[94m|[0m     [1m[33m^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+  [1m[94m|[0m
+  [1m[94m= [0m[1mnote[0m: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+[1m[33mwarning[0m: `ysos_sh` (bin "ysos_sh") generated 1 warning (run `cargo fix --bin "ysos_sh" -p ysos_sh` to apply 1 suggestion)
+[1m[92m    Finished[0m ]8;;https://doc.rust-lang.org/cargo/reference/profiles.html#default-profiles\`release` profile [optimized]]8;;\ target(s) in 0.08s
+[2J[01;01H[=3h[2J[01;01HBdsDxe: failed to load Boot0001 "UEFI QEMU DVD-ROM QM00003 " from PciRoot(0x0)/Pci(0x1,0x1)/Ata(Secondary,Master,0x0): Not Found
+BdsDxe: loading Boot0002 "UEFI QEMU HARDDISK QM00001 " from PciRoot(0x0)/Pci(0x1,0x1)/Ata(Primary,Master,0x0)
+BdsDxe: starting Boot0002 "UEFI QEMU HARDDISK QM00001 " from PciRoot(0x0)/Pci(0x1,0x1)/Ata(Primary,Master,0x0)
+[ INFO]: crates/boot/src/main.rs@026: Running UEFI bootloader...
+[ INFO]: crates/boot/src/fs.rs@117: Load file "boot.conf" to memory, size = 748
+[ INFO]: crates/boot/src/config.rs@055: parse kernel_stack_address = 0xFFFFFF0100000000
+[ INFO]: crates/boot/src/config.rs@055: parse kernel_stack_size = 512
+[ INFO]: crates/boot/src/config.rs@055: parse physical_memory_offset = 0xFFFF800000000000
+[ INFO]: crates/boot/src/config.rs@055: parse kernel_path = \KERNEL.ELF
+[ INFO]: crates/boot/src/config.rs@055: parse kernel_stack_auto_grow = 0
+[ INFO]: crates/boot/src/config.rs@055: parse load_apps = 1
+[ INFO]: crates/boot/src/main.rs@036: Config: Config {
+[ INFO]: crates/boot/src/main.rs@036:     kernel_stack_address: 0xffffff0100000000,
+[ INFO]: crates/boot/src/main.rs@036:     kernel_stack_auto_grow: 0x0,
+[ INFO]: crates/boot/src/main.rs@036:     kernel_stack_size: 0x200,
+[ INFO]: crates/boot/src/main.rs@036:     physical_memory_offset: 0xffff800000000000,
+[ INFO]: crates/boot/src/main.rs@036:     kernel_path: "\\KERNEL.ELF",
+[ INFO]: crates/boot/src/main.rs@036:     cmdline: "",
+[ INFO]: crates/boot/src/main.rs@036:     load_apps: true,
+[ INFO]: crates/boot/src/main.rs@036:     log_level: "Info",
+[ INFO]: crates/boot/src/main.rs@036: }
+[ INFO]: crates/boot/src/fs.rs@117: Load file "KERNEL.ELF" to memory, size = 292928
+[ INFO]: crates/boot/src/fs.rs@132: Free ELF file, pages = 72, addr = 0x0000000004369000
+[ INFO]: crates/boot/src/main.rs@114: Loading apps...
+[ INFO]: crates/boot/src/fs.rs@117: Load file "counter" to memory, size = 39216
+[ INFO]: crates/boot/src/fs.rs@117: Load file "mq" to memory, size = 38816
+[ INFO]: crates/boot/src/fs.rs@117: Load file "fork_test" to memory, size = 35456
+[ INFO]: crates/boot/src/fs.rs@117: Load file "sleep" to memory, size = 34416
+[ INFO]: crates/boot/src/fs.rs@117: Load file "hello" to memory, size = 34320
+[ INFO]: crates/boot/src/fs.rs@117: Load file "dinner" to memory, size = 34480
+[ INFO]: crates/boot/src/fs.rs@117: Load file "fish" to memory, size = 39008
+[ INFO]: crates/boot/src/fs.rs@117: Load file "factorial" to memory, size = 34872
+[ INFO]: crates/boot/src/fs.rs@117: Load file "sh" to memory, size = 35160
+[ INFO]: crates/boot/src/fs.rs@096: Loaded 9 apps
+[ INFO]: crates/boot/src/main.rs@122: Exiting boot services...
+[2J[H
+
+__  __      __  _____            ____  _____
+\ \/ /___ _/ /_/ ___/___  ____  / __ \/ ___/
+ \  / __ `/ __/\__ \/ _ \/ __ \/ / / /\__ \
+ / / /_/ / /_ ___/ /  __/ / / / /_/ /___/ /
+/_/\__,_/\__//____/\___/_/ /_/\____//____/
+
+                                       v0.4.0
+[+] Serial Initialized.
+[INFO] ysos_kernel::utils::logger - Logger Initialized.
+[DEBUG] ysos_kernel::memory::allocator - Kernel Heap Initialized.
+[INFO] ysos_kernel::memory::address - Physical Offset  : 0xffff800000000000
+[INFO] ysos_kernel::memory::gdt - Privilege Stack  : 0xffffff0000830210-0xffffff0000831210
+[INFO] ysos_kernel::memory::gdt - Double Fault IST : 0xffffff0000831210-0xffffff0000832210
+[INFO] ysos_kernel::memory::gdt - Page Fault IST   : 0xffffff0000832210-0xffffff0000833210
+[INFO] ysos_kernel::memory::gdt - Clock IST        : 0xffffff0000833210-0xffffff0000834210
+[INFO] ysos_kernel::memory::gdt - Syscall IST       : 0xffffff0000834210-0xffffff0000835210
+[INFO] ysos_kernel::memory::gdt - Kernel IST Size  :  16.000 KiB
+[INFO] ysos_kernel::memory::gdt - GDT Initialized.
+[INFO] ysos_kernel::memory - Physical Memory    :  95.625 MiB
+[INFO] ysos_kernel::memory - Free Usable Memory :  44.609 MiB
+[INFO] ysos_kernel::memory - Frame Allocator initialized.
+[INFO] ysos_kernel::memory::user - User Heap Initialized.
+[TRACE] ysos_kernel::interrupt::apic::ioapic - Enable IOApic: IRQ=0, CPU=0
+[TRACE] ysos_kernel::interrupt::apic::ioapic - Enable IOApic: IRQ=4, CPU=0
+[INFO] ysos_kernel::interrupt - Interrupts Initialized.
+[TRACE] ysos_kernel::proc - Init kernel vm: ProcessVm {
+    stack: Stack {
+        top: 0xffffff01fffff000,
+        bot: 0xffffff01ffe00000,
+    },
+    memory_usage: "2 MiB",
+    page_table: PageTable {
+        addr: PhysFrame[4KiB](0x5c01000),
+        flags: Cr3Flags(
+            0x0,
+        ),
+        refs: 1,
+    },
+}
+[TRACE] ysos_kernel::proc::process - New process kernel#1 created.
+[TRACE] ysos_kernel::proc::manager - Init Process {
+    pid: 1,
+    name: "kernel",
+    parent: None,
+    status: Running,
+    ticks_passed: 0,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x2000,
+        ),
+        cpu_flags: RFlags(
+            0x0,
+        ),
+        instruction_pointer: VirtAddr(
+            0x1000,
+        ),
+        regs: Registers
+        r15: 0x0000000000000000, r14: 0x0000000000000000, r13: 0x0000000000000000,
+        r12: 0x0000000000000000, r11: 0x0000000000000000, r10: 0x0000000000000000,
+        r9 : 0x0000000000000000, r8 : 0x0000000000000000, rdi: 0x0000000000000000,
+        rsi: 0x0000000000000000, rdx: 0x0000000000000000, rcx: 0x0000000000000000,
+        rbx: 0x0000000000000000, rax: 0x0000000000000000, rbp: 0x0000000000000000,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0xffffff01fffff000,
+                bot: 0xffffff01ffe00000,
+            },
+            memory_usage: "2 MiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x5c01000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 1,
+            },
+        },
+    ),
+}
+[INFO] ysos_kernel::proc - Process Manager Initialized.
+[INFO] ysos_kernel - Interrupts Enabled.
+[INFO] ysos_kernel - YatSenOS initialized.
+[+] App list:
+  App Name        | Size       | Entry Point
+  ----------------+------------+-------------------
+  counter         |    39216 B | 0x0000111100001410
+  mq              |    38816 B | 0x00001111000015d0
+  fork_test       |    35456 B | 0x00001111000011d0
+  sleep           |    34416 B | 0x00001111000010a0
+  hello           |    34320 B | 0x0000111100001020
+  dinner          |    34480 B | 0x00001111000013e0
+  fish            |    39008 B | 0x00001111000016b0
+  factorial       |    34872 B | 0x0000111100001490
+  sh              |    35160 B | 0x0000111100001530
+
+[TRACE] ysos_kernel::proc::process - New process sh#2 created.
+[TRACE] ysos_elf - Loading ELF file...0x3927000
+[TRACE] ysos_elf - Loading & mapping segment: Ph64(
+    ProgramHeader64 {
+        type_: Ok(
+            Load,
+        ),
+        flags: Flags(
+            0x4,
+        ),
+        offset: 0x1000,
+        virtual_addr: 0x111100000000,
+        physical_addr: 0x111100000000,
+        file_size: 0x6bc,
+        mem_size: 0x6bc,
+        align: 0x1000,
+    },
+)
+[TRACE] ysos_elf - Segment page table flag: PageTableFlags(PRESENT | USER_ACCESSIBLE | NO_EXECUTE)
+[TRACE] ysos_elf - Zeroing rest of the page: 0x111100000000
+[TRACE] ysos_elf - Loading & mapping segment: Ph64(
+    ProgramHeader64 {
+        type_: Ok(
+            Load,
+        ),
+        flags: Flags(
+            0x5,
+        ),
+        offset: 0x2000,
+        virtual_addr: 0x111100001000,
+        physical_addr: 0x111100001000,
+        file_size: 0x2f5f,
+        mem_size: 0x2f5f,
+        align: 0x1000,
+    },
+)
+[TRACE] ysos_elf - Segment page table flag: PageTableFlags(PRESENT | USER_ACCESSIBLE)
+[TRACE] ysos_elf - Zeroing rest of the page: 0x111100003000
+[TRACE] ysos_elf - Loading & mapping segment: Ph64(
+    ProgramHeader64 {
+        type_: Ok(
+            Load,
+        ),
+        flags: Flags(
+            0x6,
+        ),
+        offset: 0x5000,
+        virtual_addr: 0x111100004000,
+        physical_addr: 0x111100004000,
+        file_size: 0x1028,
+        mem_size: 0x1028,
+        align: 0x1000,
+    },
+)
+[TRACE] ysos_elf - Segment page table flag: PageTableFlags(PRESENT | WRITABLE | USER_ACCESSIBLE | NO_EXECUTE)
+[TRACE] ysos_elf - Zeroing rest of the page: 0x111100005000
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ffefffff000), end: Page[4KiB](0x3fff00000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ffefffff000 -> 0x16e000
+[TRACE] ysos_kernel::proc::context - Init stack frame: InterruptStackFrame {
+    instruction_pointer: VirtAddr(
+        0x111100001530,
+    ),
+    code_segment: SegmentSelector {
+        index: 5,
+        rpl: Ring3,
+    },
+    cpu_flags: RFlags(
+        IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG,
+    ),
+    stack_pointer: VirtAddr(
+        0x3ffefffffff8,
+    ),
+    stack_segment: SegmentSelector {
+        index: 6,
+        rpl: Ring3,
+    },
+}
+[TRACE] ysos_kernel::proc::manager - New Process {
+    pid: 2,
+    name: "sh",
+    parent: Some(
+        1,
+    ),
+    status: Ready,
+    ticks_passed: 0,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Ready,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ffefffffff8,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG,
+        ),
+        instruction_pointer: VirtAddr(
+            0x111100001530,
+        ),
+        regs: Registers
+        r15: 0x0000000000000000, r14: 0x0000000000000000, r13: 0x0000000000000000,
+        r12: 0x0000000000000000, r11: 0x0000000000000000, r10: 0x0000000000000000,
+        r9 : 0x0000000000000000, r8 : 0x0000000000000000, rdi: 0x0000000000000000,
+        rsi: 0x0000000000000000, rdx: 0x0000000000000000, rcx: 0x0000000000000000,
+        rbx: 0x0000000000000000, rax: 0x0000000000000000, rbp: 0x0000000000000000,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3fff00000000,
+                bot: 0x3ffefffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x164000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 1,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc - Spawned process: sh#2
+Welcome to YatSenOS Shell!
+Type 'help' for instructions.
+[>] f mq
+[TRACE] ysos_kernel::proc::process - New process mq#3 created.
+[TRACE] ysos_elf - Loading ELF file...0x4397000
+[TRACE] ysos_elf - Loading & mapping segment: Ph64(
+    ProgramHeader64 {
+        type_: Ok(
+            Load,
+        ),
+        flags: Flags(
+            0x4,
+        ),
+        offset: 0x1000,
+        virtual_addr: 0x111100000000,
+        physical_addr: 0x111100000000,
+        file_size: 0x4a4,
+        mem_size: 0x4a4,
+        align: 0x1000,
+    },
+)
+[TRACE] ysos_elf - Segment page table flag: PageTableFlags(PRESENT | USER_ACCESSIBLE | NO_EXECUTE)
+[TRACE] ysos_elf - Zeroing rest of the page: 0x111100000000
+[TRACE] ysos_elf - Loading & mapping segment: Ph64(
+    ProgramHeader64 {
+        type_: Ok(
+            Load,
+        ),
+        flags: Flags(
+            0x5,
+        ),
+        offset: 0x2000,
+        virtual_addr: 0x111100001000,
+        physical_addr: 0x111100001000,
+        file_size: 0x2acf,
+        mem_size: 0x2acf,
+        align: 0x1000,
+    },
+)
+[TRACE] ysos_elf - Segment page table flag: PageTableFlags(PRESENT | USER_ACCESSIBLE)
+[TRACE] ysos_elf - Zeroing rest of the page: 0x111100003000
+[TRACE] ysos_elf - Loading & mapping segment: Ph64(
+    ProgramHeader64 {
+        type_: Ok(
+            Load,
+        ),
+        flags: Flags(
+            0x6,
+        ),
+        offset: 0x5000,
+        virtual_addr: 0x111100004000,
+        physical_addr: 0x111100004000,
+        file_size: 0x1018,
+        mem_size: 0x1018,
+        align: 0x1000,
+    },
+)
+[TRACE] ysos_elf - Segment page table flag: PageTableFlags(PRESENT | WRITABLE | USER_ACCESSIBLE | NO_EXECUTE)
+[TRACE] ysos_elf - Zeroing rest of the page: 0x111100005000
+[TRACE] ysos_elf - Loading & mapping segment: Ph64(
+    ProgramHeader64 {
+        type_: Ok(
+            Load,
+        ),
+        flags: Flags(
+            0x6,
+        ),
+        offset: 0x7000,
+        virtual_addr: 0x111100006000,
+        physical_addr: 0x111100006000,
+        file_size: 0x0,
+        mem_size: 0x98,
+        align: 0x1000,
+    },
+)
+[TRACE] ysos_elf - Segment page table flag: PageTableFlags(PRESENT | WRITABLE | USER_ACCESSIBLE | NO_EXECUTE)
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ffdfffff000), end: Page[4KiB](0x3ffe00000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ffdfffff000 -> 0x17d000
+[TRACE] ysos_kernel::proc::context - Init stack frame: InterruptStackFrame {
+    instruction_pointer: VirtAddr(
+        0x1111000015d0,
+    ),
+    code_segment: SegmentSelector {
+        index: 5,
+        rpl: Ring3,
+    },
+    cpu_flags: RFlags(
+        IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG,
+    ),
+    stack_pointer: VirtAddr(
+        0x3ffdfffffff8,
+    ),
+    stack_segment: SegmentSelector {
+        index: 6,
+        rpl: Ring3,
+    },
+}
+[TRACE] ysos_kernel::proc::manager - New Process {
+    pid: 3,
+    name: "mq",
+    parent: Some(
+        2,
+    ),
+    status: Ready,
+    ticks_passed: 0,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Ready,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ffdfffffff8,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG,
+        ),
+        instruction_pointer: VirtAddr(
+            0x1111000015d0,
+        ),
+        regs: Registers
+        r15: 0x0000000000000000, r14: 0x0000000000000000, r13: 0x0000000000000000,
+        r12: 0x0000000000000000, r11: 0x0000000000000000, r10: 0x0000000000000000,
+        r9 : 0x0000000000000000, r8 : 0x0000000000000000, rdi: 0x0000000000000000,
+        rsi: 0x0000000000000000, rdx: 0x0000000000000000, rcx: 0x0000000000000000,
+        rbx: 0x0000000000000000, rax: 0x0000000000000000, rbp: 0x0000000000000000,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ffe00000000,
+                bot: 0x3ffdfffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 1,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc - Spawned process: mq#3
+[TRACE] ysos_kernel::proc::sync - Sem Insert: <0x7d1>1
+[TRACE] ysos_kernel::proc::sync - Sem Insert: <0x7d2>4
+[TRACE] ysos_kernel::proc::sync - Sem Insert: <0x7d3>0
+MQ capacity: 4
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ffcfffff000), end: Page[4KiB](0x3ffd00000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ffcfffff000 -> 0x181000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ffcfffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 4
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ffbfffff000), end: Page[4KiB](0x3ffc00000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ffbfffff000 -> 0x184000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ffbfffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 5
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ffafffff000), end: Page[4KiB](0x3ffb00000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ffafffff000 -> 0x187000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ffafffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 6
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ff9fffff000), end: Page[4KiB](0x3ffa00000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ff9fffff000 -> 0x18a000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ff9fffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 7
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ff8fffff000), end: Page[4KiB](0x3ff900000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ff8fffff000 -> 0x18d000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ff8fffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 8
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ff7fffff000), end: Page[4KiB](0x3ff800000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ff7fffff000 -> 0x190000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ff7fffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 9
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ff6fffff000), end: Page[4KiB](0x3ff700000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ff6fffff000 -> 0x193000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ff6fffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 10
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ff5fffff000), end: Page[4KiB](0x3ff600000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ff5fffff000 -> 0x196000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ff5fffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 11
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ff4fffff000), end: Page[4KiB](0x3ff500000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ff4fffff000 -> 0x199000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ff4fffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 12
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ff3fffff000), end: Page[4KiB](0x3ff400000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ff3fffff000 -> 0x19c000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ff3fffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 13
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ff2fffff000), end: Page[4KiB](0x3ff300000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ff2fffff000 -> 0x19f000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ff2fffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 14
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ff1fffff000), end: Page[4KiB](0x3ff200000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ff1fffff000 -> 0x1a2000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ff1fffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 15
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3ff0fffff000), end: Page[4KiB](0x3ff100000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3ff0fffff000 -> 0x1a5000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3ff0fffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 16
+Producer 1 pushed message: 1000 | Count: 1
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3feffffff000), end: Page[4KiB](0x3ff000000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3feffffff000 -> 0x1a8000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3feffffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 17
+Producer 0 pushed message: 0 | Count: 2
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3feefffff000), end: Page[4KiB](0x3fef00000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3feefffff000 -> 0x1ab000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3feefffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 18
+[TRACE] ysos_elf - Page Range: PageRange { start: Page[4KiB](0x3fedfffff000), end: Page[4KiB](0x3fee00000000) }(1)
+[TRACE] ysos_elf - Map hint: 0x3fedfffff000 -> 0x1ae000
+[TRACE] ysos_kernel::proc::vm::stack - Clone range: 0x3ffdfffff000 -> 0x3fedfffff000
+[TRACE] ysos_kernel::proc::process - Process mq#3 forked a child process with pid: 3
+[TRACE] ysos_kernel::proc::manager - Process 3 successfully forked child 19
+  PID | PPID | Process Name |  Ticks  | Status | Memory Usage
+ #  3 | #  2 | mq           |      72 | Running | 32768 B (8 Pages)
+ # 12 | #  3 | mq           |       9 | Blocked | 32768 B (8 Pages)
+ # 17 | #  3 | mq           |       1 | Blocked | 32768 B (8 Pages)
+ # 16 | #  3 | mq           |       3 | Blocked | 32768 B (8 Pages)
+ # 13 | #  3 | mq           |      11 | Blocked | 32768 B (8 Pages)
+ #  9 | #  3 | mq           |       2 | Blocked | 32768 B (8 Pages)
+ # 11 | #  3 | mq           |       1 | Blocked | 32768 B (8 Pages)
+ #  2 | #  1 | sh           |   18026 | Blocked | 28672 B (7 Pages)
+ #  8 | #  3 | mq           |       1 | Blocked | 32768 B (8 Pages)
+ # 18 | #  3 | mq           |       1 | Ready | 32768 B (8 Pages)
+ # 10 | #  3 | mq           |       1 | Blocked | 32768 B (8 Pages)
+ # 19 | #  3 | mq           |       0 | Ready | 32768 B (8 Pages)
+ #  1 | #  0 | kernel       |   18106 | Ready | 2097152 B (512 Pages)
+ #  6 | #  3 | mq           |       3 | Blocked | 32768 B (8 Pages)
+ #  4 | #  3 | mq           |       5 | Blocked | 32768 B (8 Pages)
+ # 15 | #  3 | mq           |       1 | Ready | 32768 B (8 Pages)
+ #  7 | #  3 | mq           |       3 | Blocked | 32768 B (8 Pages)
+ #  5 | #  3 | mq           |       3 | Ready | 32768 B (8 Pages)
+ # 14 | #  3 | mq           |       6 | Blocked | 32768 B (8 Pages)
+Queue  : [19, 18, 15, 5, 12, 1]
+CPUs   : [0: 3]
+Producer 3 pushed message: 3000 | Count: 3
+Producer 4 pushed message: 4000 | Count: 4
+Consumer 0 popped message: 1000 | Count: 3
+Consumer 4 popped message: 0 | Count: 2
+Consumer 1 popped message: 3000 | Count: 1
+Consumer 2 popped message: 4000 | Count: 0
+Producer 2 pushed message: 2000 | Count: 1
+Producer 5 pushed message: 5000 | Count: 2
+Producer 1 pushed message: 1001 | Count: 3
+Producer 0 pushed message: 1 | Count: 4
+Consumer 3 popped message: 2000 | Count: 3
+Consumer 6 popped message: 5000 | Count: 2
+Consumer 5 popped message: 1001 | Count: 1
+Consumer 7 popped message: 1 | Count: 0
+Producer 7 pushed message: 7000 | Count: 1
+Producer 6 pushed message: 6000 | Count: 2
+Producer 3 pushed message: 3001 | Count: 3
+Producer 4 pushed message: 4001 | Count: 4
+Consumer 4 popped message: 7000 | Count: 3
+Consumer 0 popped message: 6000 | Count: 2
+Consumer 1 popped message: 3001 | Count: 1
+Consumer 2 popped message: 4001 | Count: 0
+Producer 2 pushed message: 2001 | Count: 1
+Producer 5 pushed message: 5001 | Count: 2
+Producer 1 pushed message: 1002 | Count: 3
+Producer 0 pushed message: 2 | Count: 4
+Consumer 3 popped message: 2001 | Count: 3
+Consumer 6 popped message: 5001 | Count: 2
+Consumer 5 popped message: 1002 | Count: 1
+Consumer 7 popped message: 2 | Count: 0
+Producer 7 pushed message: 7001 | Count: 1
+Producer 6 pushed message: 6001 | Count: 2
+Producer 3 pushed message: 3002 | Count: 3
+Producer 4 pushed message: 4002 | Count: 4
+Consumer 4 popped message: 7001 | Count: 3
+Consumer 0 popped message: 6001 | Count: 2
+Consumer 1 popped message: 3002 | Count: 1
+Consumer 2 popped message: 4002 | Count: 0
+Producer 2 pushed message: 2002 | Count: 1
+Producer 5 pushed message: 5002 | Count: 2
+Producer 1 pushed message: 1003 | Count: 3
+Producer 0 pushed message: 3 | Count: 4
+Consumer 3 popped message: 2002 | Count: 3
+Consumer 5 popped message: 5002 | Count: 2
+Consumer 7 popped message: 1003 | Count: 1
+Consumer 6 popped message: 3 | Count: 0
+Producer 7 pushed message: 7002 | Count: 1
+Producer 6 pushed message: 6002 | Count: 2
+Producer 3 pushed message: 3003 | Count: 3
+Producer 4 pushed message: 4003 | Count: 4
+Consumer 4 popped message: 7002 | Count: 3
+Consumer 0 popped message: 6002 | Count: 2
+Consumer 1 popped message: 3003 | Count: 1
+Consumer 2 popped message: 4003 | Count: 0
+Producer 2 pushed message: 2003 | Count: 1
+Producer 1 pushed message: 1004 | Count: 2
+Producer 5 pushed message: 5003 | Count: 3
+Producer 0 pushed message: 4 | Count: 4
+Consumer 3 popped message: 2003 | Count: 3
+Consumer 5 popped message: 1004 | Count: 2
+Consumer 7 popped message: 5003 | Count: 1
+Consumer 6 popped message: 4 | Count: 0
+Producer 7 pushed message: 7003 | Count: 1
+Producer 6 pushed message: 6003 | Count: 2
+Producer 3 pushed message: 3004 | Count: 3
+Producer 4 pushed message: 4004 | Count: 4
+Consumer 4 popped message: 7003 | Count: 3
+Consumer 0 popped message: 6003 | Count: 2
+Consumer 1 popped message: 3004 | Count: 1
+Consumer 2 popped message: 4004 | Count: 0
+Producer 2 pushed message: 2004 | Count: 1
+Producer 1 pushed message: 1005 | Count: 2
+Producer 5 pushed message: 5004 | Count: 3
+Producer 0 pushed message: 5 | Count: 4
+Consumer 3 popped message: 2004 | Count: 3
+Consumer 5 popped message: 1005 | Count: 2
+Consumer 7 popped message: 5004 | Count: 1
+Consumer 6 popped message: 5 | Count: 0
+Producer 7 pushed message: 7004 | Count: 1
+Producer 6 pushed message: 6004 | Count: 2
+Producer 4 pushed message: 4005 | Count: 3
+Producer 3 pushed message: 3005 | Count: 4
+Consumer 4 popped message: 7004 | Count: 3
+Consumer 0 popped message: 6004 | Count: 2
+Consumer 1 popped message: 4005 | Count: 1
+Consumer 2 popped message: 3005 | Count: 0
+Producer 2 pushed message: 2005 | Count: 1
+Producer 1 pushed message: 1006 | Count: 2
+Producer 5 pushed message: 5005 | Count: 3
+Producer 0 pushed message: 6 | Count: 4
+Consumer 3 popped message: 2005 | Count: 3
+Consumer 7 popped message: 1006 | Count: 2
+Consumer 5 popped message: 5005 | Count: 1
+Producer 7 pushed message: 7005 | Count: 2
+Consumer 6 popped message: 6 | Count: 1
+Producer 6 pushed message: 6005 | Count: 2
+Producer 4 pushed message: 4006 | Count: 3
+Consumer 4 popped message: 7005 | Count: 2
+Producer 3 pushed message: 3006 | Count: 3
+Consumer 1 popped message: 6005 | Count: 2
+Consumer 0 popped message: 4006 | Count: 1
+Producer 2 pushed message: 2006 | Count: 2
+Consumer 2 popped message: 3006 | Count: 1
+Producer 1 pushed message: 1007 | Count: 2
+Producer 5 pushed message: 5006 | Count: 3
+Consumer 3 popped message: 2006 | Count: 2
+Producer 0 pushed message: 7 | Count: 3
+Consumer 7 popped message: 1007 | Count: 2
+Consumer 5 popped message: 5006 | Count: 1
+Producer 7 pushed message: 7006 | Count: 2
+Consumer 6 popped message: 7 | Count: 1
+Producer 6 pushed message: 6006 | Count: 2
+Producer 4 pushed message: 4007 | Count: 3
+Consumer 4 popped message: 7006 | Count: 2
+Producer 3 pushed message: 3007 | Count: 3
+Consumer 1 popped message: 6006 | Count: 2
+Consumer 0 popped message: 4007 | Count: 1
+Producer 2 pushed message: 2007 | Count: 2
+Consumer 2 popped message: 3007 | Count: 1
+Producer 1 pushed message: 1008 | Count: 2
+Producer 5 pushed message: 5007 | Count: 3
+Consumer 3 popped message: 2007 | Count: 2
+Producer 0 pushed message: 8 | Count: 3
+Consumer 7 popped message: 1008 | Count: 2
+Consumer 5 popped message: 5007 | Count: 1
+Producer 7 pushed message: 7007 | Count: 2
+Consumer 6 popped message: 8 | Count: 1
+Producer 4 pushed message: 4008 | Count: 2
+Producer 6 pushed message: 6007 | Count: 3
+Consumer 4 popped message: 7007 | Count: 2
+Producer 3 pushed message: 3008 | Count: 3
+Consumer 1 popped message: 4008 | Count: 2
+Consumer 0 popped message: 6007 | Count: 1
+Producer 2 pushed message: 2008 | Count: 2
+Consumer 2 popped message: 3008 | Count: 1
+Producer 1 pushed message: 1009 | Count: 2
+Producer 5 pushed message: 5008 | Count: 3
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 13,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 45,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ff3ffffff10,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x111100001201,
+        ),
+        regs: Registers
+        r15: 0x000000000000000a, r14: 0x00003ff3ffffff28, r13: 0x00003ff3ffffff20,
+        r12: 0x00003ff3ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+        rsi: 0x00000000000007d3, rdx: 0x0000000000000000, rcx: 0x00003ff3fffffed0,
+        rbx: 0x00001111000000dd, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ff400000000,
+                bot: 0x3ff3fffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 17,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#13 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ff3fffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ff3fffff000), end: Page[4KiB](0x3ff400000000) }(1)
+Consumer 3 popped message: 2008 | Count: 2
+Producer 0 pushed message: 9 | Count: 3
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 12,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 38,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ff4ffffff10,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x111100001171,
+        ),
+        regs: Registers
+        r15: 0x0000000000000009, r14: 0x00003ff4ffffff28, r13: 0x00003ff4ffffff20,
+        r12: 0x00003ff4ffffff18, r11: 0x000000000000000a, r10: 0x0000000000000009,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000003,
+        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ff4fffffed0,
+        rbx: 0x00001111000000dd, rax: 0x000000000000fff9, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ff500000000,
+                bot: 0x3ff4fffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 16,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#12 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ff4fffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ff4fffff000), end: Page[4KiB](0x3ff500000000) }(1)
+Consumer 7 popped message: 1009 | Count: 2
+Consumer 5 popped message: 5008 | Count: 1
+Producer 7 pushed message: 7008 | Count: 2
+Consumer 6 popped message: 9 | Count: 1
+Producer 6 pushed message: 6008 | Count: 2
+Producer 4 pushed message: 4009 | Count: 3
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 16,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 43,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ff0fffffed0,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x111100001882,
+        ),
+        regs: Registers
+        r15: 0x000000000000000a, r14: 0x00003ff0ffffff28, r13: 0x00003ff0ffffff20,
+        r12: 0x00003ff0ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000001,
+        rsi: 0x0000400000000060, rdx: 0x000000000000002b, rcx: 0x0000000000000048,
+        rbx: 0x00001111000000dd, rax: 0x000000000000002b, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ff100000000,
+                bot: 0x3ff0fffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 15,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#16 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ff0fffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ff0fffff000), end: Page[4KiB](0x3ff100000000) }(1)
+Consumer 4 popped message: 7008 | Count: 2
+Producer 3 pushed message: 3009 | Count: 3
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 8,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 42,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ff8ffffff10,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x1111000010ed,
+        ),
+        regs: Registers
+        r15: 0x0000000000000000, r14: 0x00003ff8ffffff28, r13: 0x00003ff8ffffff20,
+        r12: 0x00003ff8ffffff18, r11: 0x0000000000000008, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+        rsi: 0x00000000000007d2, rdx: 0x0000000000000000, rcx: 0x00003ff8fffffed0,
+        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ff900000000,
+                bot: 0x3ff8fffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 14,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#8 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ff8fffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ff8fffff000), end: Page[4KiB](0x3ff900000000) }(1)
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 15,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 34,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ff1fffffed0,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x111100001882,
+        ),
+        regs: Registers
+        r15: 0x000000000000000a, r14: 0x00003ff1ffffff28, r13: 0x00003ff1ffffff20,
+        r12: 0x00003ff1ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000001,
+        rsi: 0x0000400000000060, rdx: 0x000000000000002b, rcx: 0x0000000000000048,
+        rbx: 0x00001111000000dd, rax: 0x000000000000002b, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ff200000000,
+                bot: 0x3ff1fffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 13,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#15 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ff1fffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ff1fffff000), end: Page[4KiB](0x3ff200000000) }(1)
+Consumer 1 popped message: 6008 | Count: 2
+Consumer 0 popped message: 4009 | Count: 1
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 5,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 41,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ffbffffff10,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x1111000010d6,
+        ),
+        regs: Registers
+        r15: 0x0000000000000001, r14: 0x00003ffbffffff28, r13: 0x00003ffbffffff20,
+        r12: 0x00003ffbffffff18, r11: 0x0000000000000008, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ffbfffffed0,
+        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ffc00000000,
+                bot: 0x3ffbfffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 12,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#5 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ffbfffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ffbfffff000), end: Page[4KiB](0x3ffc00000000) }(1)
+Producer 2 pushed message: 2009 | Count: 2
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 14,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 40,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ff2ffffff10,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x111100001171,
+        ),
+        regs: Registers
+        r15: 0x0000000000000009, r14: 0x00003ff2ffffff28, r13: 0x00003ff2ffffff20,
+        r12: 0x00003ff2ffffff18, r11: 0x0000000000000008, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000003,
+        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ff2fffffed0,
+        rbx: 0x00001111000000dd, rax: 0x000000000000fff9, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ff300000000,
+                bot: 0x3ff2fffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 11,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#14 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ff2fffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ff2fffff000), end: Page[4KiB](0x3ff300000000) }(1)
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 4,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 44,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ffcffffff10,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x1111000010d6,
+        ),
+        regs: Registers
+        r15: 0x0000000000000001, r14: 0x00003ffcffffff28, r13: 0x00003ffcffffff20,
+        r12: 0x00003ffcffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ffcfffffed0,
+        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ffd00000000,
+                bot: 0x3ffcfffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 10,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#4 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ffcfffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ffcfffff000), end: Page[4KiB](0x3ffd00000000) }(1)
+Consumer 2 popped message: 3009 | Count: 1
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 6,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 43,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ffafffffed0,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x111100001882,
+        ),
+        regs: Registers
+        r15: 0x0000000000000001, r14: 0x00003ffaffffff28, r13: 0x00003ffaffffff20,
+        r12: 0x00003ffaffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000001,
+        rsi: 0x0000400000000060, rdx: 0x000000000000002b, rcx: 0x0000000000000048,
+        rbx: 0x00001111000000ae, rax: 0x000000000000002b, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ffb00000000,
+                bot: 0x3ffafffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 9,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#6 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ffafffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ffafffff000), end: Page[4KiB](0x3ffb00000000) }(1)
+Producer 5 pushed message: 5009 | Count: 2
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 17,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 34,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3feffffffed0,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x111100001882,
+        ),
+        regs: Registers
+        r15: 0x000000000000000a, r14: 0x00003fefffffff28, r13: 0x00003fefffffff20,
+        r12: 0x00003fefffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000001,
+        rsi: 0x0000400000000060, rdx: 0x000000000000002b, rcx: 0x0000000000000048,
+        rbx: 0x00001111000000dd, rax: 0x000000000000002b, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ff000000000,
+                bot: 0x3feffffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 8,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#17 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3feffffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3feffffff000), end: Page[4KiB](0x3ff000000000) }(1)
+Consumer 3 popped message: 2009 | Count: 1
+Producer 7 pushed message: 7009 | Count: 2
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 7,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 41,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ff9ffffff10,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x1111000010d6,
+        ),
+        regs: Registers
+        r15: 0x0000000000000001, r14: 0x00003ff9ffffff28, r13: 0x00003ff9ffffff20,
+        r12: 0x00003ff9ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ff9fffffed0,
+        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ffa00000000,
+                bot: 0x3ff9fffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 7,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#7 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ff9fffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ff9fffff000), end: Page[4KiB](0x3ffa00000000) }(1)
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 19,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 41,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3fedfffffed0,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x1111000018a4,
+        ),
+        regs: Registers
+        r15: 0x000000000000000a, r14: 0x00003fedffffff28, r13: 0x00003fedffffff20,
+        r12: 0x00003fedffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000400000000060,
+        rsi: 0x00003fedfffffed0, rdx: 0x000000000000002b, rcx: 0x00003fedfffffed0,
+        rbx: 0x00001111000000dd, rax: 0x000000000000fffe, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3fee00000000,
+                bot: 0x3fedfffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 6,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#19 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3fedfffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3fedfffff000), end: Page[4KiB](0x3fee00000000) }(1)
+Producer 6 pushed message: 6009 | Count: 3
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 18,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 40,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3feefffffed0,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x111100001882,
+        ),
+        regs: Registers
+        r15: 0x000000000000000a, r14: 0x00003feeffffff28, r13: 0x00003feeffffff20,
+        r12: 0x00003feeffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000001,
+        rsi: 0x0000400000000060, rdx: 0x000000000000002b, rcx: 0x0000000000000048,
+        rbx: 0x00001111000000dd, rax: 0x000000000000002b, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3fef00000000,
+                bot: 0x3feefffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 5,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#18 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3feefffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3feefffff000), end: Page[4KiB](0x3fef00000000) }(1)
+Consumer 7 popped message: 5009 | Count: 2
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 11,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 44,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ff5ffffff10,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x1111000010d6,
+        ),
+        regs: Registers
+        r15: 0x0000000000000001, r14: 0x00003ff5ffffff28, r13: 0x00003ff5ffffff20,
+        r12: 0x00003ff5ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ff5fffffed0,
+        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ff600000000,
+                bot: 0x3ff5fffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 4,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#11 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ff5fffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ff5fffff000), end: Page[4KiB](0x3ff600000000) }(1)
+Consumer 5 popped message: 7009 | Count: 1
+Consumer 6 popped message: 6009 | Count: 0
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 9,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 38,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ff7ffffff10,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x1111000010d6,
+        ),
+        regs: Registers
+        r15: 0x0000000000000001, r14: 0x00003ff7ffffff28, r13: 0x00003ff7ffffff20,
+        r12: 0x00003ff7ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ff7fffffed0,
+        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ff800000000,
+                bot: 0x3ff7fffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 3,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#9 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ff7fffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ff7fffff000), end: Page[4KiB](0x3ff800000000) }(1)
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 10,
+    name: "mq",
+    parent: Some(
+        3,
+    ),
+    status: Running,
+    ticks_passed: 41,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ff6fffffed0,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x1111000018a4,
+        ),
+        regs: Registers
+        r15: 0x0000000000000001, r14: 0x00003ff6ffffff28, r13: 0x00003ff6ffffff20,
+        r12: 0x00003ff6ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000400000000060,
+        rsi: 0x00003ff6fffffed0, rdx: 0x000000000000002b, rcx: 0x00003ff6fffffed0,
+        rbx: 0x00001111000000ae, rax: 0x000000000000fffe, rbp: 0x00001111000039a0,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ff700000000,
+                bot: 0x3ff6fffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 2,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#10 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ff6fffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ff6fffff000), end: Page[4KiB](0x3ff700000000) }(1)
+All finished. Remaining messages: 0
+[TRACE] ysos_kernel::proc::sync - Sem Remove: <0x7d1>
+[TRACE] ysos_kernel::proc::sync - Sem Remove: <0x7d2>
+[TRACE] ysos_kernel::proc::sync - Sem Remove: <0x7d3>
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 3,
+    name: "mq",
+    parent: Some(
+        2,
+    ),
+    status: Running,
+    ticks_passed: 92,
+    children: Map {
+        iter: Iter(
+            [
+                Process {
+                    pid: 4,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 44,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ffcffffff10,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x1111000010d6,
+                        ),
+                        regs: Registers
+                        r15: 0x0000000000000001, r14: 0x00003ffcffffff28, r13: 0x00003ffcffffff20,
+                        r12: 0x00003ffcffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+                        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ffcfffffed0,
+                        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 5,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 41,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ffbffffff10,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x1111000010d6,
+                        ),
+                        regs: Registers
+                        r15: 0x0000000000000001, r14: 0x00003ffbffffff28, r13: 0x00003ffbffffff20,
+                        r12: 0x00003ffbffffff18, r11: 0x0000000000000008, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+                        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ffbfffffed0,
+                        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 6,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 43,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ffafffffed0,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x111100001882,
+                        ),
+                        regs: Registers
+                        r15: 0x0000000000000001, r14: 0x00003ffaffffff28, r13: 0x00003ffaffffff20,
+                        r12: 0x00003ffaffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000001,
+                        rsi: 0x0000400000000060, rdx: 0x000000000000002b, rcx: 0x0000000000000048,
+                        rbx: 0x00001111000000ae, rax: 0x000000000000002b, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 7,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 41,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ff9ffffff10,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x1111000010d6,
+                        ),
+                        regs: Registers
+                        r15: 0x0000000000000001, r14: 0x00003ff9ffffff28, r13: 0x00003ff9ffffff20,
+                        r12: 0x00003ff9ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+                        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ff9fffffed0,
+                        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 8,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 42,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ff8ffffff10,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x1111000010ed,
+                        ),
+                        regs: Registers
+                        r15: 0x0000000000000000, r14: 0x00003ff8ffffff28, r13: 0x00003ff8ffffff20,
+                        r12: 0x00003ff8ffffff18, r11: 0x0000000000000008, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+                        rsi: 0x00000000000007d2, rdx: 0x0000000000000000, rcx: 0x00003ff8fffffed0,
+                        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 9,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 38,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ff7ffffff10,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x1111000010d6,
+                        ),
+                        regs: Registers
+                        r15: 0x0000000000000001, r14: 0x00003ff7ffffff28, r13: 0x00003ff7ffffff20,
+                        r12: 0x00003ff7ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+                        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ff7fffffed0,
+                        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 10,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 41,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ff6fffffed0,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x1111000018a4,
+                        ),
+                        regs: Registers
+                        r15: 0x0000000000000001, r14: 0x00003ff6ffffff28, r13: 0x00003ff6ffffff20,
+                        r12: 0x00003ff6ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000400000000060,
+                        rsi: 0x00003ff6fffffed0, rdx: 0x000000000000002b, rcx: 0x00003ff6fffffed0,
+                        rbx: 0x00001111000000ae, rax: 0x000000000000fffe, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 11,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 44,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ff5ffffff10,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x1111000010d6,
+                        ),
+                        regs: Registers
+                        r15: 0x0000000000000001, r14: 0x00003ff5ffffff28, r13: 0x00003ff5ffffff20,
+                        r12: 0x00003ff5ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+                        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ff5fffffed0,
+                        rbx: 0x00001111000000ae, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 12,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 38,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ff4ffffff10,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x111100001171,
+                        ),
+                        regs: Registers
+                        r15: 0x0000000000000009, r14: 0x00003ff4ffffff28, r13: 0x00003ff4ffffff20,
+                        r12: 0x00003ff4ffffff18, r11: 0x000000000000000a, r10: 0x0000000000000009,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000003,
+                        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ff4fffffed0,
+                        rbx: 0x00001111000000dd, rax: 0x000000000000fff9, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 13,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 45,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ff3ffffff10,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x111100001201,
+                        ),
+                        regs: Registers
+                        r15: 0x000000000000000a, r14: 0x00003ff3ffffff28, r13: 0x00003ff3ffffff20,
+                        r12: 0x00003ff3ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000002,
+                        rsi: 0x00000000000007d3, rdx: 0x0000000000000000, rcx: 0x00003ff3fffffed0,
+                        rbx: 0x00001111000000dd, rax: 0x0000000000000000, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 14,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 40,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ff2ffffff10,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x111100001171,
+                        ),
+                        regs: Registers
+                        r15: 0x0000000000000009, r14: 0x00003ff2ffffff28, r13: 0x00003ff2ffffff20,
+                        r12: 0x00003ff2ffffff18, r11: 0x0000000000000008, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000003,
+                        rsi: 0x00000000000007d1, rdx: 0x0000000000000000, rcx: 0x00003ff2fffffed0,
+                        rbx: 0x00001111000000dd, rax: 0x000000000000fff9, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 15,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 34,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ff1fffffed0,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x111100001882,
+                        ),
+                        regs: Registers
+                        r15: 0x000000000000000a, r14: 0x00003ff1ffffff28, r13: 0x00003ff1ffffff20,
+                        r12: 0x00003ff1ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000001,
+                        rsi: 0x0000400000000060, rdx: 0x000000000000002b, rcx: 0x0000000000000048,
+                        rbx: 0x00001111000000dd, rax: 0x000000000000002b, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 16,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 43,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3ff0fffffed0,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x111100001882,
+                        ),
+                        regs: Registers
+                        r15: 0x000000000000000a, r14: 0x00003ff0ffffff28, r13: 0x00003ff0ffffff20,
+                        r12: 0x00003ff0ffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000001,
+                        rsi: 0x0000400000000060, rdx: 0x000000000000002b, rcx: 0x0000000000000048,
+                        rbx: 0x00001111000000dd, rax: 0x000000000000002b, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 17,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 34,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3feffffffed0,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x111100001882,
+                        ),
+                        regs: Registers
+                        r15: 0x000000000000000a, r14: 0x00003fefffffff28, r13: 0x00003fefffffff20,
+                        r12: 0x00003fefffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000001,
+                        rsi: 0x0000400000000060, rdx: 0x000000000000002b, rcx: 0x0000000000000048,
+                        rbx: 0x00001111000000dd, rax: 0x000000000000002b, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 18,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 40,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3feefffffed0,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x111100001882,
+                        ),
+                        regs: Registers
+                        r15: 0x000000000000000a, r14: 0x00003feeffffff28, r13: 0x00003feeffffff20,
+                        r12: 0x00003feeffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000000000000001,
+                        rsi: 0x0000400000000060, rdx: 0x000000000000002b, rcx: 0x0000000000000048,
+                        rbx: 0x00001111000000dd, rax: 0x000000000000002b, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+                Process {
+                    pid: 19,
+                    name: "mq",
+                    parent: Some(
+                        3,
+                    ),
+                    status: Dead,
+                    ticks_passed: 41,
+                    children: Map {
+                        iter: Iter(
+                            [],
+                        ),
+                    },
+                    status: Dead,
+                    context: StackFrame {
+                        stack_top: VirtAddr(
+                            0x3fedfffffed0,
+                        ),
+                        cpu_flags: RFlags(
+                            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+                        ),
+                        instruction_pointer: VirtAddr(
+                            0x1111000018a4,
+                        ),
+                        regs: Registers
+                        r15: 0x000000000000000a, r14: 0x00003fedffffff28, r13: 0x00003fedffffff20,
+                        r12: 0x00003fedffffff18, r11: 0x0000000000000009, r10: 0x0000000000000014,
+                        r9 : 0x0000000000000001, r8 : 0x0000000000000001, rdi: 0x0000400000000060,
+                        rsi: 0x00003fedfffffed0, rdx: 0x000000000000002b, rcx: 0x00003fedfffffed0,
+                        rbx: 0x00001111000000dd, rax: 0x000000000000fffe, rbp: 0x00001111000039a0,
+                    },
+                    vm: None,
+                },
+            ],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ffdffffff90,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | ZERO_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x111100001514,
+        ),
+        regs: Registers
+        r15: 0x000000000000000e, r14: 0x000000000000000d, r13: 0x0000000000000010,
+        r12: 0x000000000000000f, r11: 0x0000000000000009, r10: 0x0000000000000008,
+        r9 : 0x0000000000000022, r8 : 0x0000000000000001, rdi: 0x0000000000000001,
+        rsi: 0x00000000000007d3, rdx: 0x0000000000000000, rcx: 0x00003ffdffffff50,
+        rbx: 0x000000000000000a, rax: 0x0000000000000000, rbp: 0x0000000000000011,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3ffe00000000,
+                bot: 0x3ffdfffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x172000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 1,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process mq#3 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ffdfffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ffdfffff000), end: Page[4KiB](0x3ffe00000000) }(1)
+Process [3] exited with code: 0
+[>] exit
+Goodbye!
+[TRACE] ysos_kernel::proc::manager - Kill Process {
+    pid: 2,
+    name: "sh",
+    parent: Some(
+        1,
+    ),
+    status: Running,
+    ticks_passed: 39789,
+    children: Map {
+        iter: Iter(
+            [],
+        ),
+    },
+    status: Running,
+    context: StackFrame {
+        stack_top: VirtAddr(
+            0x3ffeffffff20,
+        ),
+        cpu_flags: RFlags(
+            IOPL_HIGH | IOPL_LOW | INTERRUPT_FLAG | PARITY_FLAG | 0x2,
+        ),
+        instruction_pointer: VirtAddr(
+            0x111100001852,
+        ),
+        regs: Registers
+        r15: 0x00003ffeffffff67, r14: 0x00003ffeffffff68, r13: 0x0000111100000000,
+        r12: 0x0000400000000000, r11: 0x0000000000000000, r10: 0x0000000000000000,
+        r9 : 0x0000000000000001, r8 : 0x0000000000000000, rdi: 0x0000000000000001,
+        rsi: 0x0000400000000010, rdx: 0x0000000000000009, rcx: 0x0000000000000009,
+        rbx: 0x000011110000005d, rax: 0x0000000000000009, rbp: 0x0000111100000570,
+    },
+    vm: Some(
+        ProcessVm {
+            stack: Stack {
+                top: 0x3fff00000000,
+                bot: 0x3ffefffff000,
+            },
+            memory_usage: "4 KiB",
+            page_table: PageTable {
+                addr: PhysFrame[4KiB](0x164000),
+                flags: Cr3Flags(
+                    0x0,
+                ),
+                refs: 1,
+            },
+        },
+    ),
+}
+[DEBUG] ysos_kernel::proc::process - Killing process sh#2 with ret code: 0
+[TRACE] ysos_kernel::proc::vm - Deallocating Process Stack at 0x3ffefffff000
+[TRACE] ysos_elf - Unmap Page Range: PageRange { start: Page[4KiB](0x3ffefffff000), end: Page[4KiB](0x3fff00000000) }(1)
+[INFO] ysos_kernel - YatSenOS shutting down.
+[?2004h(base) ]0;linkzelda@LAPTOP-QFAEHS2I: ~/OS-lab[01;32mlinkzelda@LAPTOP-QFAEHS2I[00m:[01;34m~/OS-lab[00m$ exit
+[?2004lexit
+
+Script done on 2026-05-09 19:34:03+08:00 [COMMAND_EXIT_CODE="0"]

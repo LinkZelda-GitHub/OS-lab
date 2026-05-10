@@ -1,41 +1,35 @@
 #![no_std]
 #![no_main]
 
-use lib::{
-    sync::{Semaphore, SpinLock},
-    *,
-};
+use lib::*;
 
 extern crate lib;
 
-const CAPACITY: usize = 4; // 你可以通过修改这个值来测试不同容量 (1, 4, 8, 16)
+const CAPACITY: usize = 4; // Buffer capacity
 const PRODUCER_COUNT: usize = 8;
 const CONSUMER_COUNT: usize = 8;
 const MSG_PER_THREAD: usize = 10;
 
-static MUTEX: Semaphore = Semaphore::new(2001);
-static EMPTY: Semaphore = Semaphore::new(2002);
-static FULL: Semaphore = Semaphore::new(2003);
+const MUTEX: u32 = 2001;
+const EMPTY: u32 = 2002;
+const FULL: u32 = 2003;
 
-// 循环队列作为消息缓冲区
+// buffer
 static mut QUEUE: [usize; 16] = [0; 16];
 static mut HEAD: usize = 0;
 static mut TAIL: usize = 0;
 static mut MSG_COUNT: usize = 0;
 
 fn main() -> isize {
-    // 互斥锁始为 1
-    MUTEX.init(1);
-    // 最初空闲槽位为 CAPACITY
-    EMPTY.init(CAPACITY);
-    // 最初已有消息数为 0
-    FULL.init(0);
+    sys_new_sem(MUTEX, 1);
+    sys_new_sem(EMPTY, CAPACITY);
+    sys_new_sem(FULL, 0);
 
     let mut pids = [0u16; PRODUCER_COUNT + CONSUMER_COUNT];
 
     println!("MQ capacity: {}", CAPACITY);
 
-    // 创建消费者
+    // consumer
     for i in 0..CONSUMER_COUNT {
         let pid = sys_fork();
         if pid == 0 {
@@ -43,10 +37,11 @@ fn main() -> isize {
             sys_exit(0);
         } else {
             pids[i] = pid;
+            println!("Process {} is created as consumer", pid);
         }
     }
 
-    // 创建生产者
+    // producer
     for i in 0..PRODUCER_COUNT {
         let pid = sys_fork();
         if pid == 0 {
@@ -54,31 +49,46 @@ fn main() -> isize {
             sys_exit(0);
         } else {
             pids[CONSUMER_COUNT + i] = pid;
+            println!("Process {} is created as producer", pid);
         }
     }
 
-    // 父进程输出全部状态记录
+    // // consumer
+    // for i in 0..CONSUMER_COUNT {
+    //     let pid = sys_fork();
+    //     if pid == 0 {
+    //         do_consumer(i);
+    //         sys_exit(0);
+    //     } else {
+    //         pids[i] = pid;
+    //         println!("Process {} is created as consumer", pid);
+    //     }
+    // }
+
+    // print process status
     sys_stat();
 
-    // 等待所有子进程退出
+    // wait for all producers and consumers to finish
     for pid in pids.iter() {
         sys_wait_pid(*pid);
     }
 
     println!("All finished. Remaining messages: {}", unsafe { MSG_COUNT });
 
-    MUTEX.remove();
-    EMPTY.remove();
-    FULL.remove();
+    sys_remove_sem(MUTEX);
+    sys_remove_sem(EMPTY);
+    sys_remove_sem(FULL);
     0
 }
 
+// P for proberen, V for verhogen
+
 fn do_producer(id: usize) {
     for msg in 0..MSG_PER_THREAD {
-        let data = id * 1000 + msg; // 构建消息内容
+        let data = id * 1000 + msg; // construct a message
 
-        EMPTY.wait(); // P(empty)，等待空闲容量
-        MUTEX.wait(); // P(mutex)，互斥修改队列
+        sys_sem_wait(EMPTY); // P(empty)，wait for empty slot
+        sys_sem_wait(MUTEX); // P(mutex)，enter critical section to modify queue
 
         unsafe {
             QUEUE[TAIL] = data;
@@ -91,15 +101,15 @@ fn do_producer(id: usize) {
             );
         }
 
-        MUTEX.signal(); // V(mutex)
-        FULL.signal(); // V(full)，通知消费者有新消息了
+        sys_sem_signal(MUTEX); // V(mutex)
+        sys_sem_signal(FULL); // V(full)，a new message is available
     }
 }
 
 fn do_consumer(id: usize) {
     for _ in 0..MSG_PER_THREAD {
-        FULL.wait(); // P(full)，等待队列有消息
-        MUTEX.wait(); // P(mutex)
+        sys_sem_wait(FULL); // P(full)，wait for messages in the queue
+        sys_sem_wait(MUTEX); // P(mutex)
 
         unsafe {
             let data = QUEUE[HEAD];
@@ -111,9 +121,8 @@ fn do_consumer(id: usize) {
                 id, data, count
             );
         }
-
-        MUTEX.signal(); // V(mutex)
-        EMPTY.signal(); // V(empty)，通知生产者有新空余位了
+        sys_sem_signal(MUTEX); // V(mutex)
+        sys_sem_signal(EMPTY); // V(empty)，available slot for producers
     }
 }
 
