@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+use core::mem;
+
 use lib::*;
 
 extern crate lib;
@@ -111,6 +113,7 @@ fn inc_counter_spin() {
     val += 1;
     delay();
     *val_guard = val;
+    // mem::forget(val_guard);
 }
 
 fn inc_counter_semaphore() {
