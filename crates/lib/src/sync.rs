@@ -1,5 +1,6 @@
 use core::{
     hint::spin_loop,
+    ops::{Deref, DerefMut},
     sync::atomic::{AtomicBool, Ordering},
 };
 
@@ -7,18 +8,51 @@ use syscall_def::Syscall;
 
 use crate::*;
 
-pub struct SpinLock {
+// pub struct SpinLock {
+//     bolt: AtomicBool,
+// }
+
+// impl SpinLock {
+//     pub const fn new() -> Self {
+//         Self {
+//             bolt: AtomicBool::new(false),
+//         }
+//     }
+
+//     pub fn acquire(&self) {
+//         // FIXED: acquire the lock, spin if the lock is not available
+//         while self
+//             .bolt
+//             .compare_exchange(false, true, Ordering::Acquire,
+// Ordering::Relaxed)             .is_err()
+//         {
+//             spin_loop();
+//         }
+//     }
+
+//     pub fn release(&self) {
+//         // FIXED: release the lock
+//         self.bolt.store(false, Ordering::Release);
+//     }
+// }
+
+pub struct SpinLock<T> {
     bolt: AtomicBool,
+    data: core::cell::UnsafeCell<T>,
 }
 
-impl SpinLock {
-    pub const fn new() -> Self {
+unsafe impl<T> Sync for SpinLock<T> {}
+unsafe impl<T> Send for SpinLock<T> {}
+
+impl<T> SpinLock<T> {
+    pub const fn new(value: T) -> Self {
         Self {
             bolt: AtomicBool::new(false),
+            data: core::cell::UnsafeCell::new(value),
         }
     }
 
-    pub fn acquire(&self) {
+    pub fn lock(&self) -> SpinLockGuard<'_, T> {
         // FIXED: acquire the lock, spin if the lock is not available
         while self
             .bolt
@@ -27,15 +61,42 @@ impl SpinLock {
         {
             spin_loop();
         }
-    }
-
-    pub fn release(&self) {
-        // FIXED: release the lock
-        self.bolt.store(false, Ordering::Release);
+        SpinLockGuard { lock: self }
     }
 }
 
-unsafe impl Sync for SpinLock {} // Why? Check reflection question 5
+pub struct SpinLockGuard<'a, T> {
+    lock: &'a SpinLock<T>,
+}
+
+// impl Drop for SpinLockGuard {
+//     fn drop(&mut self) {
+//         self.lock.bolt.store(false, Ordering::Release);
+//     }
+// }
+
+impl<T> Deref for SpinLockGuard<'_, T> {
+    type Target = T;
+    #[inline(always)]
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.lock.data.get() }
+    }
+}
+
+impl<T> DerefMut for SpinLockGuard<'_, T> {
+    #[inline(always)]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *self.lock.data.get() }
+    }
+}
+
+impl<T> Drop for SpinLockGuard<'_, T> {
+    fn drop(&mut self) {
+        self.lock.bolt.store(false, Ordering::Release);
+    }
+}
+
+// unsafe impl Sync for SpinLock {} // Why? Check reflection question 5
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Semaphore {

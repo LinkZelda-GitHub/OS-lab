@@ -392,3 +392,68 @@ if id % 2 == 0 {
 ```
 然后保持之前构造死锁的设定不变，注释掉 `WAITER` 相关的信号量，进行测试，可以看到哲学家们可以正常吃饭。
 #image("./images/dinner_test_5.png")
+
+=== 尝试使用符合 Rust 做法的方式处理互斥锁，使用 RAII 的方式来保证锁的释放
+
+我们的目标是：每次要获得锁的时候创建一个 `SpinLockGuard` 类型变量（生命周期在其生命的代码块内），在离开该代码块时，这个变量自动调用 `drop` 时释放锁。我们可以对每个需要锁的数据提供专门的锁，首先我们在锁的定义中加入 `data`
+```rs
+pub struct SpinLock<T> {
+    bolt: AtomicBool,
+    data: core::cell::UnsafeCell<T>,
+}
+```
+Rust 为了避免数据竞争，对于每个变量，要么只能有若干个共享引用，要么只能有一个可变引用，而我们预期的行为是每个子进程都可以执行 `.lock(&self)` 来获取可变引用，因此这里需要使用 `core::cell::UnsafeCell<T>`，它允许内部的 `data` 可以在共享引用的时候进行修改。它提供了 `get(&self) -> *mut T` 方法，可以安全地获得内部的可变指针，从而有办法获得内部的可变引用。如下
+```rs
+impl<T> DerefMut for SpinLockGuard<'_, T> {
+    #[inline(always)]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *self.lock.data.get() }
+    }
+}
+```
+上面的 `SpinLockGuard` 定义如下，其内部引用的锁生命周期不小于该变量，保证 `drop` 的时候可以正常释放锁，同时声明为 `'a` 而不是 `'static` 让我们可以在代码块内部创建一个带锁的变量。
+```rs
+pub struct SpinLockGuard<'a, T> {
+    lock: &'a SpinLock<T>,
+}
+```
+然后实现对应的 `drop`，在释放该变量的时候释放锁
+```rs
+impl<T> Drop for SpinLockGuard<'_, T> {
+    fn drop(&mut self) {
+        self.lock.bolt.store(false, Ordering::Release);
+    }
+}
+```
+
+从而，我们获取一个数据的锁的时候，需要设置锁标记为 `true`，同时返回这个 `SpinLockGuard` 类型变量，使得用户可以获得内部数据的引用，同时在离开代码块的时候也可也自动释放锁。`.lock(&self)` 的代码如下，
+```rs
+pub fn lock(&self) -> SpinLockGuard<'_, T> {
+    // FIXED: acquire the lock, spin if the lock is not available
+    while self
+        .bolt
+        .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
+        .is_err()
+    {
+        spin_loop();
+    }
+    SpinLockGuard { lock: self }
+}
+```
+
+其余部分代码请见 `lib/src/sync.rs`。
+
+声明一个带锁的变量以及在一个代码块中锁住这个变量并修改，可以参考如下的代码
+```rs
+// init val as SpinLock type
+let val: lib::sync::SpinLock<isize> = lib::sync::SpinLock::new(0);
+// for example
+{
+    let mut val_guard = val.lock();
+    *val_guard += 1;
+}
+// val has been released
+```
+由于这个锁是在离开代码块的时候释放的，因此我们为了避免卡顿，需要尽早离开代码块释放锁（或者也可以显式调用 `drop`）。在实现 `fish` 的时候，由于之前没有考虑到这个问题，在持有锁的时候进行 `spin_loop()`，导致程序卡顿，在真正使用锁的地方加上花括号包裹就恢复正常了。
+
+给 `counter` 和 `fish` 使用这个新的锁进行测试，最终的表现与原本的预期一致，可知上面的实现无误。
