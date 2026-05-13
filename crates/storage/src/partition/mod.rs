@@ -59,30 +59,30 @@ where
     }
 }
 
-impl<T, B> BlockDevice<B> for Partition<T, B>
-where
-    T: BlockDevice<B>,
-    B: BlockTrait,
-{
-    fn block_count(&self) -> FsResult<usize> {
-        self.inner.block_count()
-    }
+// impl<T, B> BlockDevice<B> for Partition<T, B>
+// where
+//     T: BlockDevice<B>,
+//     B: BlockTrait,
+// {
+//     fn block_count(&self) -> FsResult<usize> {
+//         self.inner.block_count()
+//     }
 
-    fn read_block(&self, offset: usize, block: &mut B) -> FsResult {
-        if offset >= self.size {
-            return Err(FsError::InvalidOffset);
-        }
+//     fn read_block(&self, offset: usize, block: &mut B) -> FsResult {
+//         if offset >= self.size {
+//             return Err(FsError::InvalidOffset);
+//         }
 
-        // FIXME: calculate the block offset for inner device
-        // FIXME: read from the inner device
-    }
+//         // FIXME: calculate the block offset for inner device
+//         // FIXME: read from the inner device
+//     }
 
-    fn write_block(&self, offset: usize, block: &B) -> FsResult {
-        if offset >= self.size {
-            return Err(FsError::InvalidOffset);
-        }
+//     fn write_block(&self, offset: usize, block: &B) -> FsResult {
+//         if offset >= self.size {
+//             return Err(FsError::InvalidOffset);
+//         }
 
-        // FIXME: calculate the block offset for inner device
-        // FIXME: write to the inner device
-    }
-}
+//         // FIXME: calculate the block offset for inner device
+//         // FIXME: write to the inner device
+//     }
+// }

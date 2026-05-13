@@ -39,12 +39,37 @@ impl AtaDrive {
     pub fn open(bus: u8, drive: u8) -> Option<Self> {
         trace!("Opening drive {}@{}...", bus, drive);
 
+        const ATA_IDENT_SERIAL: usize = 20; // 20 bytes
+        const ATA_IDENT_MODEL: usize = 54; // 40 bytes
+        const ATA_IDENT_MAX_LBA: usize = 120; // 4 bytes (unsigned int)
+
         // we only support PATA drives
         if let Ok(AtaDeviceType::Pata(res)) = BUSES[bus as usize].lock().identify_drive(drive) {
             let buf = res.map(u16::to_be_bytes).concat();
-            let serial = { /* FIXME: get the serial from buf */ };
-            let model = { /* FIXME: get the model from buf */ };
-            let blocks = { /* FIXME: get the block count from buf */ };
+            let serial = {
+                /* FIXME: get the serial from buf */
+                core::str::from_utf8(&buf[ATA_IDENT_SERIAL..ATA_IDENT_SERIAL + 20])
+                    .unwrap_or("")
+                    .trim()
+                    .into()
+            };
+            let model = {
+                /* FIXME: get the model from buf */
+                core::str::from_utf8(&buf[ATA_IDENT_MODEL..ATA_IDENT_MODEL + 40])
+                    .unwrap_or("")
+                    .trim()
+                    .into()
+            };
+            let blocks = {
+                /* FIXME: get the block count from buf */
+                // FIXME: why it will out 129GiB if we use `u32::from_le_bytes`?
+                // u32::from_le_bytes(
+                //     buf[ATA_IDENT_MAX_LBA..ATA_IDENT_MAX_LBA + 4]
+                //         .try_into()
+                //         .unwrap(),
+                // )
+                ((res[61] as u32) << 16) | (res[60] as u32)
+            };
             let ata_drive = Self {
                 bus,
                 drive,
@@ -81,20 +106,24 @@ use storage::{Block512, BlockDevice};
 impl BlockDevice<Block512> for AtaDrive {
     fn block_count(&self) -> storage::FsResult<usize> {
         // FIXME: return the block count
-        todo!()
+        Ok(self.blocks as usize)
     }
 
     fn read_block(&self, offset: usize, block: &mut Block512) -> storage::FsResult {
         // FIXME: read the block
         //      - use `BUSES` and `self` to get bus
         //      - use `read_pio` to get data
-        todo!()
+        BUSES[self.bus as usize]
+            .lock()
+            .read_pio(self.drive, offset as u32, block.as_mut())
     }
 
     fn write_block(&self, offset: usize, block: &Block512) -> storage::FsResult {
         // FIXME: write the block
         //      - use `BUSES` and `self` to get bus
         //      - use `write_pio` to write data
-        todo!()
+        BUSES[self.bus as usize]
+            .lock()
+            .write_pio(self.drive, offset as u32, block.as_ref())
     }
 }

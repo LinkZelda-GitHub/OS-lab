@@ -55,6 +55,8 @@ pub fn init(boot_info: &'static BootInfo) {
     info!("Interrupts Enabled.");
 
     info!("YatSenOS initialized.");
+
+    crate::drivers::ata::AtaDrive::open(0, 0);
 }
 
 pub fn shutdown() -> ! {

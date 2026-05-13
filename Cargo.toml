@@ -1,6 +1,7 @@
 [workspace]
 exclude = ["crates/app/.cargo", "crates/app/config"]
 members = [
+  "crates/storage",
   "crates/app/*",
   "crates/boot",
   "crates/elf",
