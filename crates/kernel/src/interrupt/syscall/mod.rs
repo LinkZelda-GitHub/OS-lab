@@ -127,6 +127,17 @@ pub fn dispatcher(context: &mut ProcessContext) {
             sys_sem(&args, context);
         }
 
+        Syscall::ListDir => {
+            sys_list_dir(&args);
+            context.set_rax(0);
+        }
+        Syscall::Open => {
+            context.set_rax(sys_open(&args));
+        }
+        Syscall::Close => {
+            context.set_rax(sys_close(&args));
+        }
+
         // ----------------------------------------------------
         // NOTE: following syscall examples are implemented
         // ----------------------------------------------------

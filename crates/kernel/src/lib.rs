@@ -33,6 +33,7 @@ pub mod proc;
 pub use alloc::format;
 
 use boot::BootInfo;
+use storage::partition::{PartitionTable, mbr::MbrTable};
 use uefi::{Status, runtime::ResetType};
 
 pub fn init(boot_info: &'static BootInfo) {
@@ -49,6 +50,7 @@ pub fn init(boot_info: &'static BootInfo) {
     memory::init(boot_info); // init memory manager
     memory::user::init(); // init user heap allocator
     interrupt::init(); // init interrupts
+    filesystem::init(); // init filesystem drivers
     proc::init(boot_info); // init process management
 
     x86_64::instructions::interrupts::enable();
@@ -56,7 +58,16 @@ pub fn init(boot_info: &'static BootInfo) {
 
     info!("YatSenOS initialized.");
 
-    crate::drivers::ata::AtaDrive::open(0, 0);
+    // crate::drivers::ata::AtaDrive::open(0, 0);
+    info!(
+        "Partition 0 Info:{:#?}",
+        MbrTable::parse(crate::drivers::ata::AtaDrive::open(0, 0).unwrap())
+            .unwrap()
+            .partitions()
+            .unwrap()
+            .first()
+            .unwrap()
+    );
 }
 
 pub fn shutdown() -> ! {

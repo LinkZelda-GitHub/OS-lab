@@ -25,3 +25,4 @@ elf                   = { workspace = true }
 syscall_def           = { path = "../syscall", package = "ysos_syscall" }
 storage               = { package = "ysos_storage", path = "../storage" }
 xmas-elf.workspace = true
+chrono.workspace = true

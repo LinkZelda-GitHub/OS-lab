@@ -68,6 +68,7 @@ where
                     self.inner.clone(),
                     part.begin_lba() as usize,
                     part.total_lba() as usize,
+                    part.partition_type(),
                 ));
             }
         }

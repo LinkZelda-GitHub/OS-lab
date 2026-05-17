@@ -28,6 +28,7 @@ where
     inner: T,
     offset: usize,
     size: usize,
+    part_type: u8,
     _block: PhantomData<B>,
 }
 
@@ -36,11 +37,12 @@ where
     T: BlockDevice<B>,
     B: BlockTrait,
 {
-    pub fn new(inner: T, offset: usize, size: usize) -> Self {
+    pub fn new(inner: T, offset: usize, size: usize, part_type: u8) -> Self {
         Self {
             inner,
             offset,
             size,
+            part_type,
             _block: PhantomData,
         }
     }
@@ -53,36 +55,41 @@ where
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Partition")
+            .field("type", &format!("0x{:02x}", self.part_type))
             .field("offset", &self.offset)
             .field("size", &self.size)
             .finish()
     }
 }
 
-// impl<T, B> BlockDevice<B> for Partition<T, B>
-// where
-//     T: BlockDevice<B>,
-//     B: BlockTrait,
-// {
-//     fn block_count(&self) -> FsResult<usize> {
-//         self.inner.block_count()
-//     }
+impl<T, B> BlockDevice<B> for Partition<T, B>
+where
+    T: BlockDevice<B>,
+    B: BlockTrait,
+{
+    fn block_count(&self) -> FsResult<usize> {
+        self.inner.block_count()
+    }
 
-//     fn read_block(&self, offset: usize, block: &mut B) -> FsResult {
-//         if offset >= self.size {
-//             return Err(FsError::InvalidOffset);
-//         }
+    fn read_block(&self, offset: usize, block: &mut B) -> FsResult {
+        if offset >= self.size {
+            return Err(FsError::InvalidOffset);
+        }
 
-//         // FIXME: calculate the block offset for inner device
-//         // FIXME: read from the inner device
-//     }
+        // FIXED: calculate the block offset for inner device
+        let inner_offset = self.offset + offset;
+        // FIXED: read from the inner device
+        self.inner.read_block(inner_offset, block)
+    }
 
-//     fn write_block(&self, offset: usize, block: &B) -> FsResult {
-//         if offset >= self.size {
-//             return Err(FsError::InvalidOffset);
-//         }
+    fn write_block(&self, offset: usize, block: &B) -> FsResult {
+        if offset >= self.size {
+            return Err(FsError::InvalidOffset);
+        }
 
-//         // FIXME: calculate the block offset for inner device
-//         // FIXME: write to the inner device
-//     }
-// }
+        // FIXED: calculate the block offset for inner device
+        let inner_offset = self.offset + offset;
+        // FIXED: write to the inner device
+        self.inner.write_block(inner_offset, block)
+    }
+}

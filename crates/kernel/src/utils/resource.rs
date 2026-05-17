@@ -2,6 +2,7 @@ use alloc::string::String;
 
 use hashbrown::HashMap;
 use spin::Mutex;
+use storage::{FileHandle, fat16::file::File};
 
 #[derive(Debug, Clone)]
 pub enum StdIO {
@@ -61,6 +62,7 @@ impl ResourceSet {
 pub enum Resource {
     Console(StdIO),
     Null,
+    File(FileHandle),
 }
 
 impl Resource {
@@ -83,6 +85,7 @@ impl Resource {
                 _ => None,
             },
             Resource::Null => Some(0),
+            Resource::File(file) => file.read(buf).ok(),
         }
     }
 
@@ -100,6 +103,7 @@ impl Resource {
                 }
             },
             Resource::Null => Some(buf.len()),
+            Resource::File(file) => file.write(buf).ok(),
         }
     }
 }

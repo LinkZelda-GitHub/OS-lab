@@ -535,6 +535,7 @@ dependencies = [
  "ahash",
  "bit_field",
  "bitflags 2.11.0",
+ "chrono",
  "crossbeam-queue",
  "hashbrown",
  "lazy_static",

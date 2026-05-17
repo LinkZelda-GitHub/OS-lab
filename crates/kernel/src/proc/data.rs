@@ -44,4 +44,12 @@ impl ProcessData {
     pub fn write(&self, fd: u8, buf: &[u8]) -> isize {
         self.resources.write().write(fd, buf)
     }
+
+    pub fn open(&mut self, res: crate::resource::Resource) -> u8 {
+        self.resources.write().open(res)
+    }
+
+    pub fn close(&mut self, fd: u8) -> bool {
+        self.resources.write().close(fd)
+    }
 }

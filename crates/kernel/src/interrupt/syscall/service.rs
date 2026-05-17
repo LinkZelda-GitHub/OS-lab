@@ -1,6 +1,7 @@
 // use alloc::collections::btree_map::Cursor;
 use core::alloc::Layout;
 
+use storage::FileSystem;
 use uefi::{boot::exit, proto::device_path::build::messaging::RestServiceVendorData};
 use x86::current;
 
@@ -187,4 +188,37 @@ pub fn sys_sem(args: &SyscallArgs, context: &mut ProcessContext) {
         3 => sem_wait(args.arg1 as u32, context),
         _ => context.set_rax(usize::MAX),
     }
+}
+
+pub fn sys_list_dir(args: &SyscallArgs) {
+    let ptr = args.arg0 as *const u8;
+    let len = args.arg1;
+    let path = unsafe { core::str::from_utf8_unchecked(core::slice::from_raw_parts(ptr, len)) };
+    crate::drivers::filesystem::ls(path);
+}
+
+pub fn sys_open(args: &SyscallArgs) -> usize {
+    let ptr = args.arg0 as *const u8;
+    let len = args.arg1;
+    let path = unsafe { core::str::from_utf8_unchecked(core::slice::from_raw_parts(ptr, len)) };
+
+    let fs = crate::drivers::filesystem::get_rootfs();
+    if let Ok(file_handle) = fs.open_file(path) {
+        let fd = crate::proc::get_process_manager()
+            .current()
+            .write() // Process 返回 ProcessData, 获取 write lock
+            .open(crate::utils::resource::Resource::File(file_handle));
+        fd as usize
+    } else {
+        !0usize
+    }
+}
+
+pub fn sys_close(args: &SyscallArgs) -> usize {
+    let fd = args.arg0 as u8;
+    crate::proc::get_process_manager()
+        .current()
+        .write()
+        .close(fd);
+    0
 }

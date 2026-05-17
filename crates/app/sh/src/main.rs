@@ -34,6 +34,8 @@ fn main() -> isize {
                 println!("  list_app   - List available applications");
                 println!("  stat       - List running processes");
                 println!("  clear      - Clear the screen");
+                println!("  ls [dir]   - List files in a directory");
+                println!("  cat <file> - Print the content of a file");
                 println!("  help       - Show this help message");
                 println!("  <app_name> - Run the specified application");
                 println!("Student ID: 24325005");
@@ -50,6 +52,29 @@ fn main() -> isize {
             "exit" => {
                 println!("Goodbye!");
                 break;
+            }
+            cmd if cmd.starts_with("ls") => {
+                let mut path = cmd.strip_prefix("ls").unwrap().trim();
+                if path.is_empty() {
+                    path = "/";
+                }
+                sys_list_dir(path);
+            }
+            cmd if cmd.starts_with("cat ") => {
+                let path = cmd.strip_prefix("cat ").unwrap().trim();
+                if let Some(fd) = sys_open(path) {
+                    let mut buf = [0u8; 128];
+                    while let Some(len) = sys_read(fd, &mut buf) {
+                        if len == 0 {
+                            break;
+                        }
+                        print!("{}", core::str::from_utf8(&buf[..len]).unwrap_or(""));
+                    }
+                    sys_close(fd);
+                    println!("");
+                } else {
+                    println!("cat: {}: No such file or directory", path);
+                }
             }
             _ => {
                 let pid = sys_spawn(cmd);

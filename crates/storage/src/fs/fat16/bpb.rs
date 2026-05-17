@@ -35,10 +35,30 @@ impl Fat16Bpb {
         }
     }
 
-    // FIXME: define all the fields in the BPB
+    // FIXED: define all the fields in the BPB
     //      - use `define_field!` macro
     //      - ensure you can pass the tests
     //      - you may change the field names if you want
+    define_field!([u8; 8], 0x03, oem_name); // OEM Name
+    define_field!(u16, 0x0B, bytes_per_sector); // Bytes per Sector
+    define_field!(u8, 0x0D, sectors_per_cluster); // Sectors per Cluster
+    define_field!(u16, 0x0E, reserved_sector_count); // Reserved Sector Count
+    define_field!(u8, 0x10, fat_count); // FAT Count
+    define_field!(u16, 0x11, root_entries_count); // Root Entries Count
+    define_field!(u16, 0x13, total_sectors_16); // Total Sectors (if zero, use total_sectors_32)
+    define_field!(u8, 0x15, media_descriptor); // Media Descriptor
+    define_field!(u16, 0x16, sectors_per_fat); // Sectors per FAT
+    define_field!(u16, 0x18, sectors_per_track); // Sectors per Track
+    define_field!(u16, 0x1A, track_count); // Track Count
+    define_field!(u32, 0x1C, hidden_sectors); // Hidden Sectors
+    define_field!(u32, 0x20, total_sectors_32); // Total Sectors (if total_sectors_16 is zero)
+    define_field!(u8, 0x24, drive_number); // Drive Number
+    define_field!(u8, 0x25, reserved_flags); // Reserved Flags
+    define_field!(u8, 0x26, boot_signature); // Boot Signature (must be 0x29)
+    define_field!(u32, 0x27, volume_id); // Volume ID
+    define_field!([u8; 11], 0x2B, volume_label); // Volume Label
+    define_field!([u8; 8], 0x36, system_identifier); // System Identifier
+    define_field!(u16, 0x1FE, trail); // Trail (must be 0xAA55)
 }
 
 impl core::fmt::Debug for Fat16Bpb {

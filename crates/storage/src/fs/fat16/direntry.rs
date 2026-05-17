@@ -43,6 +43,18 @@ bitflags! {
 impl DirEntry {
     pub const LEN: usize = 0x20;
 
+    pub fn is_directory(&self) -> bool {
+        self.attributes.contains(Attributes::DIRECTORY)
+    }
+
+    pub fn is_long_name(&self) -> bool {
+        self.attributes.contains(Attributes::LFN)
+    }
+
+    pub fn is_valid(&self) -> bool {
+        !self.filename.is_eod() && !self.filename.is_unused()
+    }
+
     pub fn filename(&self) -> String {
         // NOTE: ignore the long file name in FAT16 for lab
         if self.is_valid() && !self.is_long_name() {
@@ -58,9 +70,26 @@ impl DirEntry {
     pub fn parse(data: &[u8]) -> FsResult<DirEntry> {
         let filename = ShortFileName::new(&data[..11]);
 
-        // FIXME: parse the rest of the fields
+        // FIXED: parse the rest of the fields
         //      - ensure you can pass the test
         //      - you may need `parse_datetime` function
+
+        let attributes = Attributes::from_bits_truncate(data[0x0B]);
+
+        let creat_time_raw = u16::from_le_bytes(data[0x0E..0x10].try_into().unwrap());
+        let creat_date_raw = u16::from_le_bytes(data[0x10..0x12].try_into().unwrap());
+        let created_time = parse_datetime(((creat_date_raw as u32) << 16) | creat_time_raw as u32);
+
+        let access_date_raw = u16::from_le_bytes(data[0x12..0x14].try_into().unwrap());
+        let accessed_time = parse_datetime((access_date_raw as u32) << 16);
+
+        let modified_time_raw = u16::from_le_bytes(data[0x16..0x18].try_into().unwrap());
+        let modified_date_raw = u16::from_le_bytes(data[0x18..0x1A].try_into().unwrap());
+        let modified_time =
+            parse_datetime(((modified_date_raw as u32) << 16) | modified_time_raw as u32);
+
+        let cluster = u16::from_le_bytes(data[0x1A..0x1C].try_into().unwrap()) as u32;
+        let size = u32::from_le_bytes(data[0x1C..0x20].try_into().unwrap());
 
         Ok(DirEntry {
             filename,
@@ -79,7 +108,19 @@ impl DirEntry {
 }
 
 fn parse_datetime(time: u32) -> FsTime {
-    // FIXME: parse the year, month, day, hour, min, sec from time
+    // FIXED: parse the year, month, day, hour, min, sec from time
+    let date = time >> 16;
+    let time_of_day = time & 0xFFFF;
+
+    // Extract components from the date
+    let day = (date & 0x1F) as u32;
+    let month = ((date >> 5) & 0xF) as u32;
+    let year = ((date >> 9) + 1980) as i32;
+
+    // Extract components from the time of day
+    let sec = (time_of_day & 0x1F) * 2;
+    let min = ((time_of_day >> 5) & 0x3F) as u32;
+    let hour = (time_of_day >> 11) as u32;
 
     if let Single(time) = Utc.with_ymd_and_hms(year, month, day, hour, min, sec) {
         time
@@ -124,7 +165,7 @@ impl ShortFileName {
 
     /// Parse a short file name from a string
     pub fn parse(name: &str) -> FsResult<ShortFileName> {
-        // FIXME: implement the parse function
+        // FIXED: implement the parse function
         //      use `FilenameError` and into `FsError`
         //      use different error types for following conditions:
         //
@@ -133,9 +174,60 @@ impl ShortFileName {
         //      - check if the name & ext are too long
         //      - period `.` means the start of the file extension
         //      - check if the period is misplaced (after 8 characters)
-        //      - check if the filename contains invalid characters:
-        //        [0x00..=0x1F, 0x20, 0x22, 0x2A, 0x2B, 0x2C, 0x2F, 0x3A, 0x3B,
-        //        0x3C, 0x3D, 0x3E, 0x3F, 0x5B, 0x5C, 0x5D, 0x7C]
+        //      - check if the filename contains invalid characters: [0x00..=0x1F, 0x20,
+        //        0x22, 0x2A, 0x2B, 0x2C, 0x2F, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
+        //        0x5B, 0x5C, 0x5D, 0x7C]
+        if name.is_empty() {
+            return Err(FsError::FileNameError(FilenameError::FilenameEmpty));
+        }
+
+        let mut name_buf = [0x20u8; 8];
+        let mut ext_buf = [0x20u8; 3];
+
+        if let Some(idx) = name.find('.') {
+            if idx == 0 || idx > 8 {
+                return Err(FsError::FileNameError(FilenameError::MisplacedPeriod));
+            }
+        }
+
+        let uppper_name = name.to_uppercase();
+        let parts: Vec<&str> = uppper_name.split('.').collect();
+
+        if parts.len() > 2 {
+            return Err(FsError::FileNameError(FilenameError::MisplacedPeriod));
+        }
+
+        let basename = parts[0];
+        if basename.len() > 8 {
+            return Err(FsError::FileNameError(FilenameError::NameTooLong));
+        }
+        let invalid_chars = [
+            0x20, 0x22, 0x2A, 0x2B, 0x2C, 0x2F, 0x3A, 0x3B, 0x3C, 0x3D, 0x3E, 0x3F,
+        ];
+        for (i, &b) in basename.as_bytes().iter().enumerate() {
+            if b <= 0x1F || invalid_chars.contains(&b) {
+                return Err(FsError::FileNameError(FilenameError::InvalidCharacter));
+            }
+            name_buf[i] = b;
+        }
+
+        if parts.len() == 2 {
+            let ext = parts[1];
+            if ext.len() > 3 {
+                return Err(FsError::FileNameError(FilenameError::NameTooLong));
+            }
+            for (i, &b) in ext.as_bytes().iter().enumerate() {
+                if b <= 0x1F || invalid_chars.contains(&b) {
+                    return Err(FsError::FileNameError(FilenameError::InvalidCharacter));
+                }
+                ext_buf[i] = b;
+            }
+        }
+
+        Ok(ShortFileName {
+            name: name_buf,
+            ext: ext_buf,
+        })
     }
 }
 
