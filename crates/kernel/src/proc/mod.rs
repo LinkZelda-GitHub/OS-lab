@@ -16,6 +16,7 @@ pub use manager::{fork, get_process_manager, *};
 pub use paging::PageTableContext;
 pub use pid::ProcessId;
 pub use process::*;
+use storage::FileSystem;
 pub use sync::*;
 use x86_64::{VirtAddr, structures::idt::PageFaultErrorCode};
 use xmas_elf::ElfFile;
@@ -75,13 +76,45 @@ pub fn get_process_exit_code(pid: ProcessId) -> Option<isize> {
     })
 }
 
-pub fn spawn(name: &str) -> Option<ProcessId> {
-    let app = x86_64::instructions::interrupts::without_interrupts(|| {
-        let app_list = get_process_manager().app_list()?;
-        app_list.iter().find(|&app| app.name.eq(name))
-    })?;
+// pub fn spawn(name: &str) -> Option<ProcessId> {
+//     let app = x86_64::instructions::interrupts::without_interrupts(|| {
+//         let app_list = get_process_manager().app_list()?;
+//         app_list.iter().find(|&app| app.name.eq(name))
+//     })?;
 
-    elf_spawn(name.to_string(), &app.elf)
+//     elf_spawn(name.to_string(), &app.elf)
+// }
+
+pub fn spawn(path: &str) -> Option<ProcessId> {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let fs = crate::drivers::filesystem::get_rootfs();
+
+        let mut file = match fs.open_file(path) {
+            Ok(f) => f,
+            Err(e) => {
+                warn!("Spawn: Failed to open file {}: {:?}", path, e);
+                return None;
+            }
+        };
+
+        // read whole file into buffer
+        let mut buf = Vec::new();
+        if let Err(e) = file.read_all(&mut buf) {
+            warn!("Spawn: Failed to read file {}: {:?}", path, e);
+            return None;
+        }
+
+        // parse ELF
+        let elf = match xmas_elf::ElfFile::new(&buf) {
+            Ok(e) => e,
+            Err(e) => {
+                warn!("Spawn: Invalid ELF file {}: {:?}", path, e);
+                return None;
+            }
+        };
+
+        elf_spawn(path.to_string(), &elf)
+    })
 }
 
 pub fn elf_spawn(name: String, elf: &ElfFile) -> Option<ProcessId> {

@@ -77,7 +77,8 @@ fn main() -> isize {
                 }
             }
             _ => {
-                let pid = sys_spawn(cmd);
+                let target = alloc::format!("/APP/{}", cmd.to_ascii_uppercase());
+                let pid = sys_spawn(&target);
                 if pid == 0 {
                     // last_input_empty = true;
                     println!("Unknown command or application: '{}'", cmd);

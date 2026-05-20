@@ -1,4 +1,5 @@
 #![cfg_attr(not(test), no_std)]
+// #![no_std]
 #![allow(dead_code, unused_imports)]
 #![feature(trait_alias)]
 
