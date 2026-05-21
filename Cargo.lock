@@ -462,6 +462,8 @@ dependencies = [
 name = "yslib"
 version = "0.4.0"
 dependencies = [
+ "chrono",
+ "linked_list_allocator",
  "ysos_syscall",
 ]
 
