@@ -203,6 +203,29 @@ impl Stack {
             usage: self.usage,
         }
     }
+
+    // FIXME: implemented the `clean_up` function for `Stack`
+    pub fn clean_up(
+        &mut self,
+        mapper: MapperRef,
+        dealloc: &mut impl x86_64::structures::paging::FrameDeallocator<Size4KiB>,
+    ) -> Result<(), x86_64::structures::paging::mapper::UnmapError> {
+        let count = self.usage;
+        if count == 0 {
+            return Ok(());
+        }
+
+        // The stack range might have more pages mapped if grown,
+        // we unmap the inclusive range.
+        let range_inclusive = Page::range_inclusive(self.range.start, self.range.end - 1);
+        elf::unmap_range(range_inclusive, mapper, dealloc, true)?;
+
+        self.usage = 0;
+        self.range = Page::range(self.range.start, self.range.start);
+
+        // elf::unmap_range(self.range, mapper, dealloc, true)?;
+        Ok(())
+    }
 }
 
 impl core::fmt::Debug for Stack {

@@ -8,6 +8,8 @@ const MOD: u64 = 1000000007;
 
 fn factorial(n: u64) -> u64 {
     if n == 0 {
+        // println!("\n--- [System Status When Received Peak Memory Usage] ---");
+        // sys_stat();
         1
     } else {
         n * factorial(n - 1) % MOD
@@ -27,10 +29,13 @@ fn main() -> isize {
             return 1;
         }
 
-        // calculate factorial (这一步会造成极大的栈展开)
+        // println!("\n--- [System Status BEFORE Calculation] ---");
+        // sys_stat();
+
+        // println!("\nCalculating factorial...");
         let result = factorial(n);
 
-        // print system status
+        // println!("\n--- [System Status AFTER Calculation] ---");
         sys_stat();
 
         // print result

@@ -1,20 +1,21 @@
 use alloc::{format, vec::Vec};
+
 use x86_64::{
+    VirtAddr,
     structures::paging::{
         mapper::{CleanUp, UnmapError},
         page::*,
         *,
     },
-    VirtAddr,
 };
 use xmas_elf::ElfFile;
+
 use crate::{humanized_size, memory::*};
 
 pub mod heap;
 pub mod stack;
 
 use self::{heap::Heap, stack::Stack};
-
 use super::PageTableContext;
 
 // See the documentation for the `KernelPages` type
@@ -52,7 +53,6 @@ impl ProcessVm {
         }
     }
 
-
     // See the documentation for the `KernelPages` type
     // Ignore when you not reach this part
 
@@ -85,6 +85,12 @@ impl ProcessVm {
         )
     }
 
+    pub fn init_proc_stack(&mut self, pid: super::ProcessId) -> VirtAddr {
+        let mapper = &mut self.page_table.mapper();
+        // let alloc = &mut *get_frame_alloc_for_sure();
+        self.stack.alloc_init_stack(pid, mapper)
+    }
+
     pub fn load_elf(&mut self, elf: &ElfFile) {
         let mapper = &mut self.page_table.mapper();
 
@@ -95,12 +101,16 @@ impl ProcessVm {
     }
 
     fn load_elf_code(&mut self, elf: &ElfFile, mapper: MapperRef, alloc: FrameAllocatorRef) {
-        // FIXME: make the `load_elf` function return the code pages
+        // FIXED: make the `load_elf` function return the code pages
         self.code =
             elf::load_elf(elf, *PHYSICAL_OFFSET.get().unwrap(), mapper, alloc, true).unwrap();
 
-        // FIXME: calculate code usage
-        self.code_usage = /* The code usage */;
+        // FIXED: calculate code usage
+        self.code_usage = self
+            .code
+            .iter()
+            .map(|range| (range.count() as u64) * crate::memory::PAGE_SIZE)
+            .sum();
     }
 
     pub fn fork(&self, stack_offset_count: u64) -> Self {

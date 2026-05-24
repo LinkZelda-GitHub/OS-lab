@@ -20,7 +20,7 @@ pub struct BootInfoFrameAllocator {
     size: usize,
     used: usize,
     frames: BootInfoFrameIter,
-    freed_frames: Vec<PhysFrame>,
+    recycled: Vec<PhysFrame>,
 }
 
 impl BootInfoFrameAllocator {
@@ -34,7 +34,7 @@ impl BootInfoFrameAllocator {
             size,
             frames: create_frame_iter(memory_map),
             used: 0,
-            freed_frames: Vec::new(),
+            recycled: Vec::new(),
         }
     }
 
@@ -49,22 +49,21 @@ impl BootInfoFrameAllocator {
 
 unsafe impl FrameAllocator<Size4KiB> for BootInfoFrameAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
-        // FIXED: 先看看内存回收池里面有没有限制的页面
-        if let Some(reused_frame) = self.freed_frames.pop() {
-            self.used += 1;
+        // FIXED: try pop from recycled frames
+        self.used += 1;
+        if let Some(reused_frame) = self.recycled.pop() {
             return Some(reused_frame);
         }
-
-        self.used += 1;
+        // FIXED: if recycled is empty:
+        //        try allocate from frames like before
         self.frames.next()
     }
 }
 
 impl FrameDeallocator<Size4KiB> for BootInfoFrameAllocator {
     unsafe fn deallocate_frame(&mut self, _frame: PhysFrame) {
-        // TODO: deallocate frame (not for lab 2)
-        self.freed_frames.push(_frame);
-
+        // FIXED: push frame to recycled
+        self.recycled.push(_frame);
         self.used -= 1;
     }
 }

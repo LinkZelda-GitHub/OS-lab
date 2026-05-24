@@ -9,6 +9,7 @@ use x86_64::structures::paging::{mapper::MapToError, page::PageRange, *};
 
 use super::*;
 use crate::{
+    humanized_size,
     memory::*,
     proc::vm::stack::{self, STACK_MAX_SIZE},
 };
@@ -155,7 +156,8 @@ impl ProcessInner {
         self.proc_vm
             .as_ref()
             .expect("process vm not initialized")
-            .clone_page_table()
+            .page_table
+            .clone_level_4()
     }
 
     #[inline]
@@ -218,7 +220,8 @@ impl ProcessInner {
     }
 
     pub fn load_elf(&mut self, elf: &ElfFile) -> usize {
-        self.vm_mut().load_elf(elf)
+        self.vm_mut().load_elf(elf);
+        (self.vm().code_usage / crate::memory::PAGE_SIZE) as usize
     }
 
     pub fn fork(&mut self, parent: Weak<Process>) -> ProcessInner {
@@ -308,28 +311,48 @@ impl core::fmt::Debug for Process {
     }
 }
 
+// impl core::fmt::Display for Process {
+//     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+//         let inner = self.inner.read();
+
+//         let elf_pages = inner
+//             .env("ELF_PAGES")
+//             .and_then(|s| s.parse::<u64>().ok())
+//             .unwrap_or(0);
+
+//         let total_page = elf_pages + inner.vm().memory_usage() /
+// crate::memory::PAGE_SIZE;         let current_mem_bytes = elf_pages *
+// crate::memory::PAGE_SIZE + inner.vm().memory_usage();
+
+//         write!(
+//             f,
+//             " #{:-3} | #{:-3} | {:12} | {:7} | {:?} | {} B ({} Pages)",
+//             self.pid.0,
+//             inner.parent().map(|p| p.pid.0).unwrap_or(0),
+//             inner.name,
+//             inner.ticks_passed,
+//             inner.status,
+//             current_mem_bytes,
+//             total_page,
+//         )?;
+//         Ok(())
+//     }
+// }
+
 impl core::fmt::Display for Process {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
         let inner = self.inner.read();
-
-        let elf_pages = inner
-            .env("ELF_PAGES")
-            .and_then(|s| s.parse::<u64>().ok())
-            .unwrap_or(0);
-
-        let total_page = elf_pages + inner.vm().memory_usage() / crate::memory::PAGE_SIZE;
-        let current_mem_bytes = elf_pages * crate::memory::PAGE_SIZE + inner.vm().memory_usage();
-
+        let (size, unit) = humanized_size(inner.proc_vm.as_ref().map_or(0, |vm| vm.memory_usage()));
         write!(
             f,
-            " #{:-3} | #{:-3} | {:12} | {:7} | {:?} | {} B ({} Pages)",
+            " #{:-3} | #{:-3} | {:12} | {:7} | {:>5.1} {} | {:?}",
             self.pid.0,
             inner.parent().map(|p| p.pid.0).unwrap_or(0),
             inner.name,
             inner.ticks_passed,
-            inner.status,
-            current_mem_bytes,
-            total_page,
+            size,
+            unit,
+            inner.status
         )?;
         Ok(())
     }
