@@ -93,9 +93,17 @@ fn efi_main() -> Status {
     }
 
     // FIXED: map kernel stack
+    let (stack_start, stack_size) = if config.kernel_stack_auto_grow > 0 {
+        let init_size = config.kernel_stack_auto_grow;
+        let bottom_offset = (config.kernel_stack_size - init_size) * 0x1000;
+        let init_bottom = config.kernel_stack_address + bottom_offset;
+        (init_bottom, init_size)
+    } else {
+        (config.kernel_stack_address, config.kernel_stack_size)
+    };
     map_range(
-        config.kernel_stack_address,
-        config.kernel_stack_size, // number of 4KiB pages
+        stack_start,
+        stack_size, // number of 4KiB pages
         &mut page_table,
         &mut frame_allocator,
     )
@@ -134,13 +142,13 @@ fn efi_main() -> Status {
         memory_map: mmap.entries().copied().collect(),
         physical_memory_offset: config.physical_memory_offset,
         system_table,
-        log_lever: config.log_level,
+        log_level: config.log_level,
         loaded_apps: apps,
         kernel_pages,
     };
 
     // align stack to 8 bytes
-    let stacktop = config.kernel_stack_address + config.kernel_stack_size * 0x1000 - 8;
+    let stacktop = stack_start + stack_size * 0x1000 - 8;
 
     jump_to_entry(&bootinfo, stacktop);
 }

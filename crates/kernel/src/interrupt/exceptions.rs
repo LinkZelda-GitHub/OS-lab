@@ -116,19 +116,34 @@ pub extern "x86-interrupt" fn page_fault_handler(
 
     let fault_addr = Cr2::read().unwrap();
 
-    if !crate::proc::handle_page_fault(fault_addr, err_code) {
-        let current_pid = crate::proc::processor::get_pid();
+    if err_code.contains(PageFaultErrorCode::USER_MODE) {
+        trace!("Page fault from user process.");
+        if !crate::proc::handle_page_fault(fault_addr, err_code) {
+            let current_pid = crate::proc::processor::get_pid();
 
-        log::warn!(
-            "EXCEPTION: PAGE FAULT, ERROR_CODE: {:?}\n\nTrying to access: {:#x}\nCaused by PID: \
-             {:?}\n{:#?}",
-            err_code,
-            fault_addr,
-            current_pid,
-            stack_frame
-        );
+            log::error!(
+                "EXCEPTION: PAGE FAULT, ERROR_CODE: {:?}\n\nTrying to access: {:#x}\nCaused by \
+                 PID: {:?}\n{:#?}",
+                err_code,
+                fault_addr,
+                current_pid,
+                stack_frame
+            );
 
-        panic!("Cannot handle page fault!");
+            panic!("Cannot handle page fault!");
+        }
+    } else {
+        info!("Page fault on kernel at {:#x}", fault_addr);
+
+        if !crate::proc::handle_page_fault(fault_addr, err_code) {
+            log::error!(
+                "EXCEPTION: PAGE FAULT (KERNEL)\n{:#?}\nCode: {:?}\nAddr: {:#x}",
+                stack_frame,
+                err_code,
+                fault_addr
+            );
+            panic!("Kernel page fault cannot be recovered.");
+        }
     }
 }
 

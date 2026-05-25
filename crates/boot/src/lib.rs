@@ -59,7 +59,7 @@ pub struct BootInfo<'a> {
     pub system_table: NonNull<core::ffi::c_void>,
 
     /// Only the log level that is greater or equal to log_level can be output
-    pub log_lever: &'a str,
+    pub log_level: &'a str,
 
     // Loaded apps
     pub loaded_apps: Option<AppList>,
