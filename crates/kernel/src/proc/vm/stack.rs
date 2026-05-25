@@ -204,7 +204,7 @@ impl Stack {
         }
     }
 
-    // FIXME: implemented the `clean_up` function for `Stack`
+    // FIXED: implemented the `clean_up` function for `Stack`
     pub fn clean_up(
         &mut self,
         mapper: MapperRef,
@@ -212,6 +212,7 @@ impl Stack {
     ) -> Result<(), x86_64::structures::paging::mapper::UnmapError> {
         let count = self.usage;
         if count == 0 {
+            warn!("Stack is empty, no need to clean up.");
             return Ok(());
         }
 
@@ -219,11 +220,10 @@ impl Stack {
         // we unmap the inclusive range.
         let range_inclusive = Page::range_inclusive(self.range.start, self.range.end - 1);
         elf::unmap_range(range_inclusive, mapper, dealloc, true)?;
-
-        self.usage = 0;
         self.range = Page::range(self.range.start, self.range.start);
 
-        // elf::unmap_range(self.range, mapper, dealloc, true)?;
+        self.usage = 0;
+
         Ok(())
     }
 }

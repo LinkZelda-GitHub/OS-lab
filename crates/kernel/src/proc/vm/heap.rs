@@ -1,9 +1,10 @@
 use alloc::sync::Arc;
 use core::sync::atomic::{AtomicU64, Ordering};
 
+use x86::current;
 use x86_64::{
     VirtAddr,
-    structures::paging::{Page, mapper::UnmapError},
+    structures::paging::{Page, mapper::UnmapError, page::PageRangeInclusive},
 };
 
 use super::{FrameAllocatorRef, MapperRef};
@@ -77,8 +78,16 @@ impl Heap {
         }
 
         // FIXME: load the current end address and **reset it to base** (use `swap`)
-
+        let current_end = self.end.swap(self.base.as_u64(), Ordering::Relaxed);
         // FIXME: unmap the heap pages
+        let start_page = Page::containing_address(self.base);
+        let end_page = Page::containing_address(VirtAddr::new(current_end)) - 1;
+        let page_range = PageRangeInclusive {
+            start: start_page,
+            end: end_page,
+        };
+
+        elf::unmap_range(page_range, mapper, dealloc, true)?;
 
         Ok(())
     }

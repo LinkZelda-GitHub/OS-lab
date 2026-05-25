@@ -81,4 +81,37 @@ drop(alloc);
 
 == 用户程序的内存释放
 
+首先，我们需要在 `stack.rs` 中实现栈的内存释放函数 `clean_up`，代码如下
+```rs
+pub fn clean_up(
+    &mut self,
+    mapper: MapperRef,
+    dealloc: &mut impl x86_64::structures::paging::FrameDeallocator<Size4KiB>,
+) -> Result<(), x86_64::structures::paging::mapper::UnmapError> {
+    let count = self.usage;
+    if count == 0 {
+        warn!("Stack is empty, no need to clean up.");
+        return Ok(());
+    }
 
+    // The stack range might have more pages mapped if grown,
+    // we unmap the inclusive range.
+    let range_inclusive = Page::range_inclusive(self.range.start, self.range.end - 1);
+    elf::unmap_range(range_inclusive, mapper, dealloc, true)?;
+    self.range = Page::range(self.range.start, self.range.start);
+
+    self.usage = 0;
+
+    Ok(())
+}
+```
+由于我们的内存范围定义是左闭右开的，因此我们要先转化为闭区间 `range_inclusive` 然后调用 `elf::unmap_range()` 进行释放，随后还需要更新栈占用的页面为 0 以及内存的页面范围为一个空区间。
+
+然后我们再在 `proc/vm/mod.rs` 的 `clean_up` 函数中，根据文档加入相关调试信息的输出。
+
+最后，我们需要对 `ProcessVm` 实现 `Drop` trait，调用自己的 `.clean_up()` 函数释放内存，此时 `kill` 函数中调用的 `proc_vm.take()` 在进程退出的时候释放了 `ProcessVm` 的所有权，当 `ProcessVm` 对象没有被任何一个对象持有时，就会自动调用我们实现的 `Drop` trait 中的 `drop` 函数，从而实现了进程退出时的内存释放。
+
+我们可以运行 `factorial`，发现在进程退出之后，使用的内存也被正常释放了！
+#image("./images/memory_2.png")
+
+== 内核的内存统计
