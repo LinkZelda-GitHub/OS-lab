@@ -36,7 +36,7 @@ pub enum ProgramStatus {
 
 /// init process manager
 pub fn init(boot_info: &'static boot::BootInfo) {
-    let proc_vm = ProcessVm::new(PageTableContext::new()).init_kernel_vm();
+    let proc_vm = ProcessVm::new(PageTableContext::new()).init_kernel_vm(&boot_info.kernel_pages);
 
     trace!("Init kernel vm: {:#?}", proc_vm);
 

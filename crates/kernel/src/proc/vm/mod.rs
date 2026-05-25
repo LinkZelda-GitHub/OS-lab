@@ -71,9 +71,20 @@ impl ProcessVm {
     //     self
     // }
 
-    pub fn init_kernel_vm(mut self) -> Self {
-        // TODO: record kernel code usage
+    pub fn init_kernel_vm(mut self, pages: &boot::KernelPages) -> Self {
+        // FIXED: load `self.code` and `self.code_usage` from `pages`
+        self.code = pages.iter().copied().collect();
+        self.code_usage = self
+            .code
+            .iter()
+            .map(|range| (range.count() as u64) * crate::memory::PAGE_SIZE)
+            .sum();
+
+        // FIXED: init kernel stack (impl the const `kstack` function)
+        //        `pub const fn kstack() -> Self`
+        //         use consts to init stack, same with kernel config
         self.stack = Stack::kstack();
+
         self
     }
 
@@ -146,7 +157,7 @@ impl ProcessVm {
         let dealloc = &mut *get_frame_alloc_for_sure();
 
         let start_count = dealloc.frames_recycled();
-        // FIXME: implement the `clean_up` function for `Stack`
+        // FIXED: implement the `clean_up` function for `Stack`
         self.stack.clean_up(mapper, dealloc)?;
 
         if self.page_table.using_count() == 1 {

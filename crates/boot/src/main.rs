@@ -78,7 +78,7 @@ fn efi_main() -> Status {
     );
 
     // FIXED: load and map the kernel elf file
-    load_elf(
+    let elf_pages = load_elf(
         &elf,
         config.physical_memory_offset,
         &mut page_table, // load_elf expects Mapper<Size4KiB>
@@ -86,6 +86,11 @@ fn efi_main() -> Status {
         false,
     )
     .expect("Failed to load ELF");
+
+    let mut kernel_pages = arrayvec::ArrayVec::new();
+    for range in &elf_pages {
+        let _ = kernel_pages.try_push(*range);
+    }
 
     // FIXED: map kernel stack
     map_range(
@@ -131,6 +136,7 @@ fn efi_main() -> Status {
         system_table,
         log_lever: config.log_level,
         loaded_apps: apps,
+        kernel_pages,
     };
 
     // align stack to 8 bytes

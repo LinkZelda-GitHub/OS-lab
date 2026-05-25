@@ -12,7 +12,7 @@ pub use uefi::{
 use x86_64::{
     VirtAddr,
     registers::control::Cr3,
-    structures::paging::{OffsetPageTable, PageTable},
+    structures::paging::{OffsetPageTable, PageTable, page::PageRangeInclusive},
 };
 
 pub mod allocator;
@@ -43,6 +43,8 @@ pub type AppList = ArrayVec<App, MAX_APP_COUNT>;
 
 pub type AppListRef = Option<&'static AppList>;
 
+pub type KernelPages = ArrayVec<PageRangeInclusive, 8>;
+
 /// This structure represents the information that the bootloader passes to the
 /// kernel.
 pub struct BootInfo<'a> {
@@ -61,6 +63,9 @@ pub struct BootInfo<'a> {
 
     // Loaded apps
     pub loaded_apps: Option<AppList>,
+
+    // Kernel pages
+    pub kernel_pages: KernelPages,
 }
 
 /// Get current page table from CR3

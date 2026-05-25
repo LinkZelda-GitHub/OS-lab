@@ -11,7 +11,7 @@ pub trait Read {
         let start_len = buf.len();
         let mut temp_buf = [0u8; 128];
         loop {
-            // FIXME: read data into the buffer
+            // FIXED: read data into the buffer
             //      - extend the buffer if it's not big enough
             //      - break if the read returns 0 or Err
             //      - update the length of the buffer if data was read
