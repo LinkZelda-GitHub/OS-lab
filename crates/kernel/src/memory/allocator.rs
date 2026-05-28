@@ -35,11 +35,14 @@
 //     info!("Kernel Heap Initialized.");
 // }
 
-use core::ptr::addr_of_mut;
-use core::alloc::{GlobalAlloc, Layout};
+use core::{
+    alloc::{GlobalAlloc, Layout},
+    ptr::addr_of_mut,
+};
+
 use linked_list_allocator::LockedHeap;
-use x86_64::VirtAddr;
 use log::debug;
+use x86_64::VirtAddr;
 
 pub const HEAP_SIZE: usize = 8 * 1024 * 1024; // 8 MiB
 
@@ -50,14 +53,20 @@ unsafe impl GlobalAlloc for SafeAllocator {
     unsafe fn alloc(&self, layout: Layout) -> *mut u8 {
         // 在拿取自旋锁分配内存的整个过程中，强行关闭时钟中断！
         x86_64::instructions::interrupts::without_interrupts(|| {
-            self.0.lock().allocate_first_fit(layout).ok().map_or(core::ptr::null_mut(), |allocation| allocation.as_ptr())
+            self.0
+                .lock()
+                .allocate_first_fit(layout)
+                .ok()
+                .map_or(core::ptr::null_mut(), |allocation| allocation.as_ptr())
         })
     }
 
     unsafe fn dealloc(&self, ptr: *mut u8, layout: Layout) {
         // 释放内存时同样屏蔽中断
         x86_64::instructions::interrupts::without_interrupts(|| {
-            self.0.lock().deallocate(core::ptr::NonNull::new(ptr).unwrap(), layout)
+            self.0
+                .lock()
+                .deallocate(core::ptr::NonNull::new(ptr).unwrap(), layout)
         })
     }
 }
@@ -82,11 +91,6 @@ pub fn init() {
     }
 
     debug!("Kernel Heap Initialized.");
-}
-
-#[alloc_error_handler]
-fn alloc_error_handler(layout: alloc::alloc::Layout) -> ! {
-    panic!("Allocation error: {:?}", layout);
 }
 
 /*

@@ -147,11 +147,59 @@ LOAD           0x0000000000047000 0xffffff0000046000 0xffffff0000046000
 
 == 用户态堆的实现
 
+我们这部分为了实现用户态对堆的管理，需要实现 `sys_brk` 系统调用给用户态进行堆的使用和管理。这个系统调用支持：如果我们传入 `None`，则会返回目前堆顶的地址，否则会返回 `brk` 之后的新堆顶地址。
+
+首先，我们根据文档和之前系统调用实现的方法，添加 `sys_brk` 的系统调用号 `12`，并在 `lib/src/syscall.rs` 中进行封装，然后再在 `syscall/mod.rs` 的分配器中交给 `service.rs` 下的 `sys_brk` 进行，随后一路向下委托到 `vm/heap.rs` 中的堆自己的 `brk` 函数来进行。
+
+根据文档，首先需要根据传入的 `new_end` 是 `None` 还是一个地址来确定目前是否需要对堆进行操作，
+```rs
+// FIXED: if new_end is None, return the current end address
+let current_end_u64 = self.end.load(Ordering::Relaxed);
+let current_end = VirtAddr::new(current_end_u64);
+let new_end = match new_end {
+    Some(addr) => addr,
+    None => return Some(current_end),
+};
+```
+
+然后，我们要检查传入的地址是否在合法的地址的范围内，
+```rs
+// FIXED: check if the new_end is valid (in range [base, base + HEAP_SIZE])
+if new_end < self.base || new_end.as_u64() > HEAP_END {
+    return None;
+}
+```
+
+随后，我们根据 `new_end` 的值是让堆的范围扩大还是缩小进行不同的处理，如果是要释放整个堆区，那么就直接进行 `unmap_range`，否则，需要先将 `new_end` 向上对齐（因此不能和 `stack` 直接用 `containing_address` 对齐而要用 `align_up` 向上对齐）到页边界，然后根据是要扩大堆区还是缩小堆区进行 `map_range` 或者是 `unmap_range` 即可，注意我们的堆区范围定义是左闭右开，因此进行 `unmap_range` 的时候要把右边界 `-1`，这部分代码具体请见 `proc/vm/heap.rs`。
+
+最后，我们要记得把堆区的右边界设为我们的新堆顶 `new_end`。
+
+然后，我们要实现堆的释放函数 `clean_up`，和 `stack` 的 `clean_up` 函数类似，唯一的区别就是要把地址向上对齐而不是向下对齐。具体请见 `proc/vm/heap.rs`。
+
+然后我们使用文档给出的代码写一个用户程序 `brk_test` 对 `sys_brk` 系统调用进行测试，同时在其 `Cargo.homl` 中将其使用的 allocator 改成 `brk_alloc`，可以看到，我们现在的用户程序可以正常使用 `sys_brk` 来调整自己的堆大小，同时用户程序初始化的时候，也正常调用了 `sys_brk` 堆用户程序的堆进行扩容初始化
+#image("./images/heap_1.png")
+
 == 思考题
 
 === 当在 Linux 中运行程序的时候删除程序在文件系统中对应的文件，会发生什么？程序能否继续运行？遇到未被映射的内存会发生什么？
 
+若在运行程序时删除程序对对应的文件，什么都不会发生，程序可以继续运行，如果遇到未被映射的内存，则会从磁盘中将对应的代码段或者数据段调入内存，然后继续正常执行直到结束。
+
+这是因为 Linux 中的每个文件实际上是由一个 `inode` 号以及 `DirEntry`，后者实际上是文件名与 `inode` 号的映射， `inode` 中实际保存了文件的大小，权限，文件在磁盘上的位置等信息。当我们删除某个文件的时候，实际上只是删除了 `DirEntry` 的信息，而只有当某个 `inode` 没有任何的 `DirEntry` 指向它（也被称为 Hard Link），且没有任何进程正在打开着这个文件时，Linux 内核才会释放其指向的磁盘位置上的数据。
+
+因此我们删除文件实际上只是删除 `DirEntry`，代码段和数据段等信息还在磁盘上，因此可以正常运行，缺页时也可以正常从磁盘中把页调入内存。
+
 === 为什么要通过 `Arc::strong_count` 来获取 `Arc` 的引用计数？查看它的定义，它和一般使用 `&self` 的方法有什么不同？出于什么考虑不能直接通过 `&self` 来进行这一操作？
+
+因为我们在进行 `fork` 的时候，子进程的堆是和父进程共享的，子进程退出的时候，会调用当前进程的堆的 `clean_up` 函数，如果此时 `clean_up` 将当前进程的堆提前释放，则会导致父进程出错，因此我们要先用 `Arc::strong_count` 获取当前堆的强引用计数，来保证堆内存不会提前释放。
+
+```rs
+pub fn strong_count(this: &Self) -> usize {
+    this.inner().strong.load(Relaxed)
+}
+```
+这个方法是一个静态方法（参数是 `this: &Self` 而不是以 `self` 开头的），不可以通过成员函数的方式进行调用。这样设计的原因是：`Arc<T>` 实现了 `Deref` 隐式解引用，即外壳 `Arc` 对内部成员函数透明。因此如果 `T` 内部实现了 `.strong_count()` 成员函数，那么在 `Arc<T>` 类型下调用 `.strong_count()` 就不能得到预期的行为，因此这里设计为静态方法。
+
 
 === `bootloader` 加载内核并为其分配初始栈区时，至少需要多少页内存才能保证内核正常运行？
 - 尝试逐渐增大内核的栈区大小，观察内核的运行情况，对于不能正常启动的情况，尝试分析可能的原因。
@@ -171,12 +219,147 @@ LOAD           0x0000000000047000 0xffffff0000046000 0xffffff0000046000
 
 - `mmap` 的主要功能是什么？它可以实现哪些常见的内存管理操作？
 
+其主要功能是可以将一个文件或者一段匿名内存等映射到进程的虚拟地址空间中。可以实现文件映射，程序直接通过读写指针访问文件；也可以以共享内存的方式实现进程间通信。
+
 - `munmap` 的主要功能是什么？什么时候需要使用 `munmap`？
+用于释放由 `mmap` 建立的内存映射。当我们不需要访问该文件映射，或者希望释放匿名内存，进程间的共享内存等的时候需要使用 `munmap` 进行释放，避免内存的泄漏。
 
 - `mprotect` 的主要功能是什么？使用 `mprotect` 可以实现哪些内存保护操作？
 
+`mprotect` 用于更改某一段由 `mmap` 映射好的虚拟内存的的保护属性。如可以更改为只读 `PROT_READ` 防止文件被修改，还有 `PROT_WRITE` 可写属性以及 `PROT_EXEC` 可执行属性等。也可以使用 `PROT_NONE` 清空权限，用来防止栈越界等问题。
+
 - 编写 C 程序，使用 mmap 将一个文件映射到内存中，并读写该文件的内容。
+
+代码如下，具体的说明已经写在注释中
+```c
+int main() {
+    const char *filepath = "test.txt";
+
+    // O_RDWR: 以读写方式打开文件
+    // O_CREAT: 如果文件不存在则创建文件
+    // 0666: 创建文件的权限，表示所有用户都具有读写权限
+    int fd = open(filepath, O_RDWR | O_CREAT, 0666);
+
+    // 设置文件大小为 100 bytes
+    ftruncate(fd, 100);
+
+    // 将文件映射到内存
+    // PROT_READ | PROT_WRITE: 映射区域可读可写
+    // MAP_SHARED: 映射区域的修改会反映到文件中
+    // 也可也设置为 MAP_PRIVATE: 映射区域的修改不会反映到文件中，相当于 COW 机制
+    // NULL: 由系统选择映射地址
+    // 0: 从文件的开头开始映射
+    // 返回映射的地址，如果失败则返回 MAP_FAILED
+    char *mapped = mmap(NULL, 100, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    if (mapped == MAP_FAILED) {
+        perror("mmap failed");
+        return 1;
+    }
+
+    // 写文件内容
+    strcpy(mapped, "Hello from mmap!");
+
+    // 读文件内容
+    printf("Read from memory: %s\n", mapped);
+
+    // 取消映射与关闭文件
+    munmap(mapped, 100);
+    close(fd);
+    return 0;
+}
+```
+我们编译运行这个程序，可以看到，文件被创建，并成功读写内容。
+#image("./images/mmap_test.png")
 
 - 思考：文件内容什么时候会被写入到磁盘？
 
+使用 `mmap` 写入的文件内容，实际上是写入 Cache，让对应的页的 dirty 位置 1，会由操作系统的内核线程 `pdflush` 定期扫描，将 dirty 位为 1 的页写回磁盘；在要进行页面调出的时候，也会写入磁盘；用户程序也可以使用 `msync()` 系统调用强制把页面内容立即写入磁盘。
+
 - 综合考虑有关内存、文件、I/O 等方面的知识，讨论为什么 `mmap` 系统调用在现代操作系统中越来越受欢迎，它具有哪些优势？
+
+因为 `mmap` 系统调用是直接把内核中的 Cache 映射到了用户的虚拟内存中，常规的 `read/write` 会把数据拷贝到用户的 Buffer，前者可以节省 CPU 开销；其次，我们映射到用户的虚拟内存之后，直接用指针访问文件即可，避免了使用 `read/write` 系统调用的内核态切换，且操作较为简单。且在进行进程间共享内存的时候，不需要复制多份到进程缓冲区，而是直接共享物理页，节省了内存的开销。
+
+== 加分项
+
+我们在文档给出的实现参考的基础上加上一个 `total_size` 成员，用来记录当前用户态的堆大小，然后初始化以及修改的时候原子性地对 `total_size` 进行修改（从而保证我们地用户程序在多线程下可以正常按顺序进行扩容）。
+
+对于 `extend` 函数，我们直接尝试更新 `total_size`，然后调用 `sys_brk` 映射需要扩容堆空间地址，以及使用 `LockedHeap` 自带的 `extend` 进行内存分配器的堆扩容，我们这里使用 `loop` 是为了循环尝试按顺序修改 `total_size` 并修改，
+```rs
+pub unsafe fn extend(&self, layout: Layout) -> bool {
+    // FIXED: extend heap size with `brk` system call
+    //        return false if failed or reach the max size (8 MiB suggested)
+    let required = layout.size();
+
+    loop {
+        // use loop to retry if compare_exchange failed
+        let current_size = self.total_size.load(Ordering::SeqCst);
+        let new_size = current_size + required;
+        if new_size > HEAP_MAX_SIZE {
+            return false;
+        }
+        if self
+            .total_size
+            .compare_exchange(current_size, new_size, Ordering::SeqCst, Ordering::SeqCst)
+            .is_ok()
+        {
+            let head_start = sys_brk(None).unwrap();
+            let head_new_end = head_start + required;
+            let ret = sys_brk(Some(head_new_end)).expect("Failed to extend heap");
+            if ret == head_new_end {
+                unsafe { self.allocator.lock().extend(required) };
+                return true;
+            } else {
+                // rollback the total size if failed
+                self.total_size.fetch_sub(required, Ordering::SeqCst);
+                return false;
+            }
+        }
+    }
+}
+```
+
+随后，对于 `alloc`，我们就先尝试使用 `LockedHeap` 进行 `alloc`，如果不成功（得到了空地址），则进行堆的扩容，
+```rs
+// FIXED: if alloc failed, ptr is null
+// FIXED: try to extend heap size, then alloc again
+if ptr.is_null() && self.extend(layout) {
+    ptr = self.allocator.alloc(layout);
+}
+```
+
+其余部分代码请见 `allocator/brk.rs`。
+
+然后我们进行测试，我们进行测试的代码如下，我们初始时设置的堆大小是 8 KiB，然后我们在用户程序中通过向 `Vec` 中加入元素以及用 `Box` 在堆上声明一个很大的数组来测试堆是否可以自动扩容，这里为了防止被编译优化，输出了 `large_box` 的首尾元素。
+```rs
+fn main() -> isize {
+    println!("Testing Automatic Heap Expansion...");
+
+    let mut large_vec = Vec::new();
+    for i in 0..10000 {
+        large_vec.push(i);
+    }
+
+    let mut large_box = Box::new([0u8; 1024 * 1024]);
+
+    large_box[0] = 42;
+    large_box[1024 * 1024 - 1] = 84;
+
+    // avoid optimization
+    println!(
+        "Large Box first element: {}, last element: {}",
+        large_box[0],
+        large_box[1024 * 1024 - 1]
+    );
+
+    println!(
+        "Vec length: {}, Box alloc size: {}",
+        large_vec.len(),
+        large_box.len()
+    );
+    println!("Heap test PASSED!");
+
+    0
+}
+```
+可以从日志中看到，确实堆实现了自动扩容，也符合 `Vec` 的扩容表现（每次扩容大小是前一次的两倍），以及 `Box` 一次性 alloc 了 1 MiB 的堆空间，说明我们的堆自动扩容实现符合预期！
+#image("./images/heap_1.png")

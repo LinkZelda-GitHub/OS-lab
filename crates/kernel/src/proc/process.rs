@@ -266,6 +266,10 @@ impl ProcessInner {
     pub fn set_rax(&mut self, value: usize) {
         self.context.set_rax(value);
     }
+
+    pub fn brk(&self, addr: Option<VirtAddr>) -> Option<VirtAddr> {
+        self.vm().brk(addr)
+    }
 }
 
 impl core::ops::Deref for Process {
