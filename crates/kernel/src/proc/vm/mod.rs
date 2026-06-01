@@ -162,7 +162,7 @@ impl ProcessVm {
 
         if self.page_table.using_count() == 1 {
             // free heap
-            // FIXME: implement the `clean_up` function for `Heap`
+            // FIXED: implement the `clean_up` function for `Heap`
             self.heap.clean_up(mapper, dealloc)?;
 
             // free code
