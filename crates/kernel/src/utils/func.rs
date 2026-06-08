@@ -3,11 +3,10 @@ use core::f64::consts::PI;
 use embedded_graphics::{
     mono_font::{MonoTextStyleBuilder, iso_8859_1::FONT_6X10},
     prelude::*,
-    primitives::{Circle, Line, Primitive, PrimitiveStyle, Rectangle},
     text::{Baseline, Text, TextStyleBuilder},
 };
 
-use crate::drivers::vga::{Color, VgaDisplay, get_vga};
+use crate::drivers::vga::{Color, VgaDisplay, VgaDriver, get_vga};
 
 pub fn test() -> ! {
     let mut count = 0;
@@ -45,6 +44,51 @@ pub fn stack_test() -> ! {
     crate::proc::process_exit(0)
 }
 
+/// Get current time as milliseconds since midnight using UEFI runtime.
+fn get_time_ms() -> usize {
+    let t = uefi::runtime::get_time().expect("Failed to get UEFI time");
+    t.second() as usize * 1000
+        + t.minute() as usize * 60 * 1000
+        + t.hour() as usize * 3600 * 1000
+        + (t.nanosecond() / 1_000_000) as usize
+}
+
+/// Draw a thick line by plotting individual pixels along the line segment,
+/// using a filled circle (stamp) at each step so the line is always visible.
+fn draw_thick_line(vga: &VgaDriver, x1: i32, y1: i32, x2: i32, y2: i32, color: Color, width: i32) {
+    let dx = (x2 - x1).abs();
+    let dy = -(y2 - y1).abs();
+    let sx = if x1 < x2 { 1 } else { -1 };
+    let sy = if y1 < y2 { 1 } else { -1 };
+    let mut err = dx + dy;
+    let mut x = x1;
+    let mut y = y1;
+    let half = width / 2;
+
+    loop {
+        // Draw a small filled square centered at (x, y)
+        for wy in -half..=half {
+            for wx in -half..=half {
+                vga.draw_pixel((x + wx) as u32, (y + wy) as u32, color);
+            }
+        }
+        if x == x2 && y == y2 {
+            break;
+        }
+        let e2 = 2 * err;
+        if e2 >= dy {
+            if x == x2 { break; }
+            err += dy;
+            x += sx;
+        }
+        if e2 <= dx {
+            if y == y2 { break; }
+            err += dx;
+            y += sy;
+        }
+    }
+}
+
 /// Draw an animated analog clock on the upper portion of the VGA display.
 /// Uses embedded-graphics primitives for clean rendering.
 ///
@@ -71,12 +115,7 @@ pub fn clock_demo() {
     let cy = (ch / 2) as i32;
     let radius = (ch.min(tw) as i32 / 2).saturating_sub(16);
 
-    // Colors
     let bg_color = Color::new(20, 22, 34);
-    let border_color = Color::new(80, 90, 120);
-    let major_tick = Color::new(200, 210, 230);
-    let minor_tick = Color::new(50, 60, 80);
-    let title_color = Color::new(0, 180, 140);
 
     let mut total_seconds: u32 = 0;
 
@@ -87,75 +126,48 @@ pub fn clock_demo() {
             // Clear clock area with dark background
             vga.fill_rect(0, 0, tw, ch, bg_color);
 
-            let mut display = VgaDisplay::new(&vga);
-
-            // ── Title bar ──
-            let title_style = MonoTextStyleBuilder::new()
-                .font(&FONT_6X10)
-                .text_color(title_color)
-                .build();
-            let _ = Text::with_text_style(
-                "YatSenOS Clock",
-                Point::new(8, 6),
-                title_style,
-                TextStyleBuilder::new().baseline(Baseline::Top).build(),
-            );
-
-            // ── Clock face border (double circle) ──
-            let outer_style = PrimitiveStyle::with_stroke(border_color, 2);
-            let _ = Circle::new(Point::new(cx, cy), radius as u32 + 2)
-                .into_styled(outer_style)
-                .draw(&mut display);
-            let inner_style = PrimitiveStyle::with_stroke(Color::new(60, 70, 95), 1);
-            let _ = Circle::new(Point::new(cx, cy), radius as u32)
-                .into_styled(inner_style)
-                .draw(&mut display);
-
-            // ── Hour markers ──
-            for h in 0..12 {
-                let angle = (h as f64) * (PI / 6.0) - PI / 2.0;
-                let (sin_a, cos_a) = (libm::sin(angle), libm::cos(angle));
-                let outer_r = (radius - 7) as f64;
-                let inner_r = if h % 3 == 0 {
-                    (radius - 18) as f64
+            // ── Tick marks (every 5 seconds, 60 positions) ──
+            for s in 0..60 {
+                let angle = (s as f64) * (PI / 30.0) - PI / 2.0;
+                let outer_r = (radius - 8) as f64;
+                let inner_r = if s % 5 == 0 {
+                    (radius - 22) as f64 // long tick at hour positions
                 } else {
-                    (radius - 12) as f64
+                    (radius - 14) as f64 // short tick every 5 sec
                 };
-                let x1 = (cx as f64 + inner_r * cos_a) as i32;
-                let y1 = (cy as f64 + inner_r * sin_a) as i32;
-                let x2 = (cx as f64 + outer_r * cos_a) as i32;
-                let y2 = (cy as f64 + outer_r * sin_a) as i32;
-
-                let marker_color = if h % 3 == 0 {
-                    major_tick
+                let x1 = (cx as f64 + inner_r * libm::cos(angle)) as i32;
+                let y1 = (cy as f64 + inner_r * libm::sin(angle)) as i32;
+                let x2 = (cx as f64 + outer_r * libm::cos(angle)) as i32;
+                let y2 = (cy as f64 + outer_r * libm::sin(angle)) as i32;
+                let (color, w): (Color, i32) = if s % 5 == 0 {
+                    (Color::new(200, 210, 230), 2)
                 } else {
-                    minor_tick
+                    (Color::new(50, 60, 80), 1)
                 };
-                let thickness: u32 = if h % 3 == 0 { 2 } else { 1 };
-                let _ = Line::new(Point::new(x1, y1), Point::new(x2, y2))
-                    .into_styled(PrimitiveStyle::with_stroke(marker_color, thickness))
-                    .draw(&mut display);
+                draw_thick_line(&vga, x1, y1, x2, y2, color, w);
             }
 
-            // ── Hour numbers (12, 3, 6, 9) ──
-            let num_style = MonoTextStyleBuilder::new()
-                .font(&FONT_6X10)
-                .text_color(major_tick)
-                .build();
-            let hour_nums = [12u32, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-            for (i, &num) in hour_nums.iter().enumerate() {
-                let angle = (i as f64) * (PI / 6.0) - PI / 2.0;
-                let num_r = (radius - 28) as f64;
-                let nx = (cx as f64 + num_r * libm::cos(angle) - 3.0) as i32;
-                let ny = (cy as f64 + num_r * libm::sin(angle) - 5.0) as i32;
-                let num_str = alloc::format!("{}", num);
-                let _ = Text::with_text_style(
-                    &num_str,
-                    Point::new(nx, ny),
-                    num_style,
-                    TextStyleBuilder::new().baseline(Baseline::Top).build(),
-                )
-                .draw(&mut display);
+            // ── Hour numbers (1–12) ──
+            {
+                let mut display = VgaDisplay::new(&vga);
+                let num_style = MonoTextStyleBuilder::new()
+                    .font(&FONT_6X10)
+                    .text_color(Color::new(200, 210, 230))
+                    .build();
+                let nums = [12u32, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+                for (i, &num) in nums.iter().enumerate() {
+                    let angle = (i as f64) * (PI / 6.0) - PI / 2.0;
+                    let r = (radius - 30) as f64;
+                    let nx = (cx as f64 + r * libm::cos(angle) - 3.0) as i32;
+                    let ny = (cy as f64 + r * libm::sin(angle) - 5.0) as i32;
+                    let _ = Text::with_text_style(
+                        &alloc::format!("{}", num),
+                        Point::new(nx, ny),
+                        num_style,
+                        TextStyleBuilder::new().baseline(Baseline::Top).build(),
+                    )
+                    .draw(&mut display);
+                }
             }
 
             // ── Draw hands ──
@@ -167,81 +179,40 @@ pub fn clock_demo() {
                 + ((total_seconds / 60) % 60) as f64 * (PI / 360.0)
                 - PI / 2.0;
 
-            // Second hand: bright red
-            let sl = (radius - 12) as f64;
-            let sx = (cx as f64 + sl * libm::cos(sec_angle)) as i32;
-            let sy = (cy as f64 + sl * libm::sin(sec_angle)) as i32;
-            let _ = Line::new(Point::new(cx, cy), Point::new(sx, sy))
-                .into_styled(PrimitiveStyle::with_stroke(Color::RED, 1))
-                .draw(&mut display);
-
-            // Second hand tail
-            let stl = (radius / 4) as f64;
-            let stx = (cx as f64 - stl * libm::cos(sec_angle)) as i32;
-            let sty = (cy as f64 - stl * libm::sin(sec_angle)) as i32;
-            let _ = Line::new(Point::new(cx, cy), Point::new(stx, sty))
-                .into_styled(PrimitiveStyle::with_stroke(Color::RED, 1))
-                .draw(&mut display);
-
-            // Minute hand: light blue, thick
-            let ml = (radius - 24) as f64;
-            let mx = (cx as f64 + ml * libm::cos(min_angle)) as i32;
-            let my = (cy as f64 + ml * libm::sin(min_angle)) as i32;
-            for off in -1..=1i32 {
-                let _ = Line::new(
-                    Point::new(cx + off, cy),
-                    Point::new(mx + off, my),
-                )
-                .into_styled(PrimitiveStyle::with_stroke(Color::new(150, 200, 255), 1))
-                .draw(&mut display);
+            // ── Hour hand: white ──
+            {
+                let hl = (radius - 42) as f64;
+                let hx = (cx as f64 + hl * libm::cos(hour_angle)) as i32;
+                let hy = (cy as f64 + hl * libm::sin(hour_angle)) as i32;
+                draw_thick_line(&vga, cx, cy, hx, hy, Color::WHITE, 3);
             }
 
-            // Hour hand: white, thickest
-            let hl = (radius - 40) as f64;
-            let hx = (cx as f64 + hl * libm::cos(hour_angle)) as i32;
-            let hy = (cy as f64 + hl * libm::sin(hour_angle)) as i32;
-            for off in -1..=1i32 {
-                let _ = Line::new(
-                    Point::new(cx + off, cy),
-                    Point::new(hx + off, hy),
-                )
-                .into_styled(PrimitiveStyle::with_stroke(Color::WHITE, 1))
-                .draw(&mut display);
+            // ── Minute hand: light blue, thick ──
+            {
+                let ml = (radius - 26) as f64;
+                let mx = (cx as f64 + ml * libm::cos(min_angle)) as i32;
+                let my = (cy as f64 + ml * libm::sin(min_angle)) as i32;
+                draw_thick_line(&vga, cx, cy, mx, my, Color::new(150, 210, 255), 3);
             }
 
-            // ── Center cap ──
-            let _ = Circle::new(Point::new(cx - 3, cy - 3), 6)
-                .into_styled(PrimitiveStyle::with_fill(Color::new(0, 200, 120)))
-                .draw(&mut display);
-            let _ = Circle::new(Point::new(cx - 1, cy - 1), 2)
-                .into_styled(PrimitiveStyle::with_fill(Color::BLACK))
-                .draw(&mut display);
-
-            // ── Digital time display ──
-            let time_str = alloc::format!(
-                "{:02}:{:02}:{:02}",
-                (total_seconds / 3600) % 24,
-                (total_seconds / 60) % 60,
-                total_seconds % 60
-            );
-            let dl_style = MonoTextStyleBuilder::new()
-                .font(&FONT_6X10)
-                .text_color(Color::new(240, 240, 255))
-                .build();
-            let _ = Text::with_text_style(
-                &time_str,
-                Point::new(cx - 15, cy + radius + 14),
-                dl_style,
-                TextStyleBuilder::new().baseline(Baseline::Top).build(),
-            );
-
-            // Separator bar at the bottom of the clock area
-            vga.fill_rect(0, ch - 1, tw, 1, Color::new(0, 140, 100));
+            // ── Second hand: orange-red ──
+            {
+                let sl = (radius - 4) as f64;
+                let sx = (cx as f64 + sl * libm::cos(sec_angle)) as i32;
+                let sy = (cy as f64 + sl * libm::sin(sec_angle)) as i32;
+                draw_thick_line(&vga, cx, cy, sx, sy, Color::new(255, 80, 40), 2);
+            }
         }
 
-        // Sleep ~1 second using hlt in a loop (no RTC timer, approximate)
-        for _ in 0..60_000_000 {
-            core::hint::spin_loop();
+        // Wait 1 second using UEFI time.
+        {
+            let start = get_time_ms();
+            loop {
+                if get_time_ms().wrapping_sub(start) >= 1000 {
+                    break;
+                }
+                core::hint::spin_loop();
+            }
         }
     }
 }
