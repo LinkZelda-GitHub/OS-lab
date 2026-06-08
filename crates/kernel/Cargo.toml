@@ -22,6 +22,8 @@ volatile              = { workspace = true }
 x86                   = { workspace = true }
 x86_64                = { workspace = true }
 elf                   = { workspace = true }
+pc-keyboard           = { workspace = true }
+embedded-graphics     = { workspace = true }
 syscall_def           = { path = "../syscall", package = "ysos_syscall" }
 storage               = { package = "ysos_storage", path = "../storage" }
 xmas-elf.workspace = true

@@ -272,3 +272,42 @@ pub fn brk(addr: Option<VirtAddr>) -> Option<VirtAddr> {
         get_process_manager().current().read().brk(addr)
     })
 }
+
+/// Spawn a kernel-mode thread (no userspace, runs in ring 0)
+pub fn spawn_kernel_thread(func: fn(), name: String, data: Option<ProcessData>) -> ProcessId {
+    x86_64::instructions::interrupts::without_interrupts(|| {
+        let manager = get_process_manager();
+
+        let proc_data = data.unwrap_or_default();
+        let proc_vm = ProcessVm::new(PageTableContext::new());
+
+        // Create kernel thread process
+        let proc = Process::new(name, None, Some(proc_vm), Some(proc_data));
+
+        // Set up the process to run the function in Ring 0
+        {
+            let mut inner = proc.write();
+
+            // Use a fixed kernel stack for kernel threads (avoid PID-based offset overflow)
+            const KTHREAD_STACK_SIZE: usize = 0x4000; // 4 pages
+            #[used]
+            static mut KTHREAD_STACK: [u8; KTHREAD_STACK_SIZE] = [0; KTHREAD_STACK_SIZE];
+            let stack_top =
+                VirtAddr::from_ptr(core::ptr::addr_of!(KTHREAD_STACK)) + KTHREAD_STACK_SIZE as u64;
+
+            let entry = VirtAddr::new(func as *const () as u64);
+            inner.init_stack_frame(entry, stack_top);
+
+            // Override segments for kernel mode (Ring 0)
+            let selector = crate::memory::gdt::get_user_selector();
+            inner.context.as_mut().stack_frame.code_segment = selector.kernel_code_selector;
+            inner.context.as_mut().stack_frame.stack_segment = selector.kernel_data_selector;
+        }
+
+        let pid = proc.pid();
+        manager.add_proc(pid, proc.clone());
+        manager.push_ready(pid);
+
+        pid
+    })
+}

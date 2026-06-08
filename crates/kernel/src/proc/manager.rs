@@ -97,7 +97,7 @@ impl ProcessManager {
     }
 
     #[inline]
-    fn add_proc(&self, pid: ProcessId, proc: Arc<Process>) {
+    pub(super) fn add_proc(&self, pid: ProcessId, proc: Arc<Process>) {
         self.processes.write().insert(pid, proc);
     }
 

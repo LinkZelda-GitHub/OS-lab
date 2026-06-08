@@ -108,7 +108,7 @@ impl ProcessVm {
         let alloc = &mut *get_frame_alloc_for_sure();
 
         self.load_elf_code(elf, mapper, alloc);
-        self.stack.init(mapper, alloc);
+        // self.stack.init(mapper, alloc);
     }
 
     fn load_elf_code(&mut self, elf: &ElfFile, mapper: MapperRef, alloc: FrameAllocatorRef) {
@@ -170,12 +170,17 @@ impl ProcessVm {
                 elf::unmap_range(*page_range, mapper, dealloc, true)?;
             }
 
-            unsafe {
-                // free P1-P3
-                mapper.clean_up(dealloc);
+            // unsafe {
+            //     // free P1-P3
+            //     mapper.clean_up(dealloc);
 
-                // free P4
-                dealloc.deallocate_frame(self.page_table.reg.addr);
+            //     // free P4
+            //     dealloc.deallocate_frame(self.page_table.reg.addr);
+            // }
+
+            // 4. 递归释放所有中间页表帧 + PML4
+            unsafe {
+                free_user_page_tables(self.page_table.reg.addr, dealloc);
             }
         }
 
@@ -213,4 +218,35 @@ impl core::fmt::Debug for ProcessVm {
             .field("page_table", &self.page_table)
             .finish()
     }
+}
+
+unsafe fn free_user_page_tables(
+    pml4: PhysFrame<Size4KiB>,
+    dealloc: &mut impl FrameDeallocator<Size4KiB>,
+) {
+    unsafe fn walk(
+        frame: PhysFrame<Size4KiB>,
+        level: u8,
+        dealloc: &mut impl FrameDeallocator<Size4KiB>,
+    ) {
+        let table = physical_to_virtual(frame.start_address().as_u64()) as *const PageTable;
+        let limit: usize = if level == 4 { 256 } else { 512 };
+
+        for i in 0..limit {
+            let entry = &(&(*table))[i];
+            if entry.is_unused() || entry.flags().contains(PageTableFlags::HUGE_PAGE) {
+                continue;
+            }
+            if let Ok(child) = entry.frame() {
+                walk(child, level - 1, dealloc);
+            }
+        }
+
+        if level < 4 {
+            dealloc.deallocate_frame(frame);
+        }
+    }
+
+    walk(pml4, 4, dealloc);
+    dealloc.deallocate_frame(pml4);
 }

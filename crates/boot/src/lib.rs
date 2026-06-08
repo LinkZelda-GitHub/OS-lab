@@ -45,6 +45,23 @@ pub type AppListRef = Option<&'static AppList>;
 
 pub type KernelPages = ArrayVec<PageRangeInclusive, 8>;
 
+/// Graphics Output Protocol info passed from bootloader to kernel
+#[derive(Debug, Clone, Copy)]
+pub struct GopInfo {
+    /// Physical address of the framebuffer
+    pub fb_addr: u64,
+    /// Framebuffer size in bytes
+    pub fb_size: u64,
+    /// Horizontal resolution in pixels
+    pub width: u32,
+    /// Vertical resolution in pixels
+    pub height: u32,
+    /// Pixels per scanline (may differ from width * bytes_per_pixel)
+    pub stride: u32,
+    /// Pixel format (0=BGR, 1=RGB, ...)
+    pub format: u32,
+}
+
 /// This structure represents the information that the bootloader passes to the
 /// kernel.
 pub struct BootInfo<'a> {
@@ -66,6 +83,9 @@ pub struct BootInfo<'a> {
 
     // Kernel pages
     pub kernel_pages: KernelPages,
+
+    // graphics info from GOP
+    pub gop_info: Option<GopInfo>,
 }
 
 /// Get current page table from CR3

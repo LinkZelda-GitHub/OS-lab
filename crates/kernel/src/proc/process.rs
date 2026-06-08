@@ -26,7 +26,7 @@ pub struct ProcessInner {
     children: Vec<Arc<Process>>,
     ticks_passed: usize,
     status: ProgramStatus,
-    context: ProcessContext,
+    pub(super) context: ProcessContext,
     exit_code: Option<isize>,
     proc_data: Option<ProcessData>,
     proc_vm: Option<ProcessVm>,

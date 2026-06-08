@@ -1,11 +1,10 @@
+use alloc::string::String;
 use core::fmt::Write;
 
-use lazy_static::lazy_static;
 use crossbeam_queue::ArrayQueue;
-use log::warn;
-use uefi::proto::console::serial::Serial;
+use lazy_static::lazy_static;
+
 use super::uart16550::SerialPort;
-use alloc::string::String;
 
 // 定义输入缓冲区存储的数据类型（从串口接收的原始字节）
 type Key = u8;
@@ -41,28 +40,39 @@ pub fn pop_key() -> Key {
     }
 }
 
+/// Echo a character to the VGA console (best-effort, uses try_lock)
+fn echo_to_vga(ch: char) {
+    // Spin-lock the VGA console so we never drop a visual echo
+    if let Some(mut console) = super::vga_text::get_vga_console() {
+        use core::fmt::Write;
+        let _ = write!(console, "{}", ch);
+    }
+}
+
 /// 阻塞地读取一行输入，并实时回显，支持退格删除。
 /// 遇到换行符 `\n` 或回车符 `\r` 时结束，返回用户输入的字符串（不含换行符）。
+/// Echoes characters to both serial port and VGA console.
 pub fn get_line() -> String {
-    // log::info!("Waiting for user input:: 1");
     let mut serial_port = SerialPort::new(0x3F8); // COM1 基地址
-    // log::info!("Waiting for user input:: 2");
     let mut line = String::with_capacity(128);
-    // log::info!("Waiting for user input:: 3");
-    
+
     loop {
         let ch = pop_key();
         match ch {
             b'\n' | b'\r' => {
                 // 换行/回车：打印换行并结束读取
                 write!(serial_port, "\n").unwrap();
+                echo_to_vga('\n');
                 break;
             }
-            0x08 | 0x7F => { // 退格（Backspace / Delete）
+            0x08 | 0x7F => {
+                // 退格（Backspace / Delete）
                 if !line.is_empty() {
                     line.pop();
                     // 调用串口驱动提供的退格函数，删除屏幕上最后一个字符
                     write!(serial_port, "\x08 \x08").unwrap(); // 退格 + 空格 + 退格，覆盖最后一个字符
+                    // VGA echo: backspace
+                    echo_to_vga('\x08');
                 }
             }
             _ => {
@@ -70,6 +80,7 @@ pub fn get_line() -> String {
                 if ch >= 0x20 && ch <= 0x7E {
                     line.push(ch as char);
                     write!(serial_port, "{}", ch as char).unwrap();
+                    echo_to_vga(ch as char);
                 }
                 // 忽略其他控制字符（如制表符、铃声等）
             }

@@ -6,8 +6,6 @@
 
 use alloc::boxed::Box;
 
-use libm::trunc;
-use storage::FsError;
 use x86_64::instructions::port::*;
 
 use super::consts::*;

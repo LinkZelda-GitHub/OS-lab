@@ -48,8 +48,16 @@ pub fn init(boot_info: &'static BootInfo) {
     memory::address::init(boot_info);
     memory::gdt::init(); // init gdt
     memory::init(boot_info); // init memory manager
+
+    if let Some(ref gop_info) = boot_info.gop_info {
+        vga::init(gop_info);
+    }
+
     memory::user::init(); // init user heap allocator
     interrupt::init(); // init interrupts
+
+    keyboard::init(); // init keyboard driver
+
     filesystem::init(); // init filesystem drivers
     proc::init(boot_info); // init process management
 

@@ -1,6 +1,5 @@
 use alloc::{boxed::Box, format, string::String};
 
-use chrono::DateTime;
 use storage::{fat16::Fat16, mbr::*, *};
 
 use super::ata::*;

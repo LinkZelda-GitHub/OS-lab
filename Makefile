@@ -2,13 +2,37 @@ OVMF := assets/OVMF.fd
 ESP := esp
 BUILD_ARGS :=
 QEMU_ARGS := -m 96M
-QEMU_OUTPUT := -nographic
+QEMU_OUTPUT ?= -nographic
 MODE ?= release
 CUR_PATH := $(shell pwd)
 APP_PATH := $(CUR_PATH)/crates/app
 DBG_INFO ?= false
 
-APPS := $(shell find $(APP_PATH) -maxdepth 1 -type d)
+.PHONY: build run debug clean launch intdbg gui \
+	target/x86_64-unknown-uefi/$(MODE)/ysos_boot.efi \
+	target/x86_64-unknown-none/$(PROFILE)/ysos_kernel \
+	target/x86_64-unknown-ysos/$(MODE)
+
+run: build launch
+
+# GUI mode: open QEMU window with VGA display, serial output on terminal.
+# Prefers SDL display (works with WSLg/X11), falls back to VNC if needed.
+# To override: make gui DISPLAY_BACKEND=gtk
+DISPLAY_BACKEND ?= sdl
+ifeq ($(DISPLAY_BACKEND),vnc)
+gui: QEMU_OUTPUT = -vga std -serial stdio -vnc 0.0.0.0:0
+else
+gui: QEMU_OUTPUT = -vga std -serial stdio -display $(DISPLAY_BACKEND)
+endif
+gui: build launch
+
+launch:
+	@qemu-system-x86_64 \
+		-bios ${OVMF} \
+		-net none \
+		$(QEMU_ARGS) \
+		$(QEMU_OUTPUT) \
+		-drive format=raw,file=fat:rw:${ESP}
 APPS := $(filter-out $(APP_PATH),$(patsubst $(APP_PATH)/%, %, $(APPS)))
 APPS := $(filter-out config,$(APPS))
 APPS := $(filter-out .cargo,$(APPS))
@@ -26,11 +50,6 @@ endif
 ifeq (${MODE}, release)
 	BUILD_ARGS := --release
 endif
-
-.PHONY: build run debug clean launch intdbg \
-	target/x86_64-unknown-uefi/$(MODE)/ysos_boot.efi \
-	target/x86_64-unknown-none/$(PROFILE)/ysos_kernel \
-	target/x86_64-unknown-ysos/$(MODE)
 
 run: build launch
 

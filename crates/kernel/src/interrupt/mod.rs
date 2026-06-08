@@ -2,6 +2,7 @@ mod apic;
 pub mod clock;
 mod consts;
 mod exceptions;
+mod keyboard;
 mod serial;
 pub mod syscall;
 
@@ -18,6 +19,7 @@ lazy_static! {
             clock::register_idt(&mut idt);
             serial::register_idt(&mut idt);
             syscall::register_idt(&mut idt);
+            keyboard::register_idt(&mut idt);
         }
         idt
     };
@@ -38,6 +40,7 @@ pub fn init() {
     // FIXED: enable serial irq with IO APIC (use enable_irq)
     enable_irq(Irq::Timer as u8, 0);
     enable_irq(Irq::Serial0 as u8, 0); // enable IRQ4 for CPU0
+    enable_irq(Irq::Keyboard as u8, 0); // enable IRQ1 for CPU0
 
     info!("Interrupts Initialized.");
 }

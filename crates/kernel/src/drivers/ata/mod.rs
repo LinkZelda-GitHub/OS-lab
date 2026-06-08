@@ -7,7 +7,7 @@
 mod bus;
 mod consts;
 
-use alloc::{boxed::Box, string::String};
+use alloc::boxed::Box;
 
 use bus::AtaBus;
 use consts::AtaDeviceType;

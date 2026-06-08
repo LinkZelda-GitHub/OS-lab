@@ -50,6 +50,7 @@ volatile              = "0.6"
 x86                   = "0.52"
 x86_64                = "0.15"
 xmas-elf              = "0.10"
+embedded-graphics     = "0.8"
 
 # Local dependencies
 

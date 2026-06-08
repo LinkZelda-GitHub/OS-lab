@@ -36,9 +36,17 @@ fn main() -> isize {
                 println!("  clear      - Clear the screen");
                 println!("  ls [dir]   - List files in a directory");
                 println!("  cat <file> - Print the content of a file");
+                println!("  clock      - Show clock status");
                 println!("  help       - Show this help message");
                 println!("  <app_name> - Run the specified application");
+                println!("Keys:");
+                println!("  Up/Down    - Scroll shell history");
+                println!("  PgUp/PgDn  - Page through shell history");
                 println!("Student ID: 24325005");
+            }
+            "clock" => {
+                println!("Analog clock is running in the top half of the display.");
+                println!("Use Up/Down/PgUp/PgDn to scroll through shell history.");
             }
             "list_app" => {
                 sys_list_app();
@@ -47,6 +55,7 @@ fn main() -> isize {
                 sys_stat();
             }
             "clear" => {
+                // Clear both serial and VGA
                 print!("\x1b[2J\x1b[1;1H");
             }
             "exit" => {

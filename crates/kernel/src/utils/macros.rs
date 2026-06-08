@@ -56,11 +56,35 @@ macro_rules! println {
     ($($arg:tt)*) => ($crate::print!("{}\n\r", format_args!($($arg)*)));
 }
 
+// #[doc(hidden)]
+// pub fn print_internal(args: Arguments) {
+//     interrupts::without_interrupts(|| {
+//         if let Some(mut serial) = get_serial() {
+//             serial.write_fmt(args).unwrap();
+//         }
+//     });
+// }
+
 #[doc(hidden)]
 pub fn print_internal(args: Arguments) {
     interrupts::without_interrupts(|| {
         if let Some(mut serial) = get_serial() {
-            serial.write_fmt(args).unwrap();
+            let _ = serial.write_fmt(args);
+        }
+        // Spin-lock VGA console (if initialized) to never drop output
+        if let Some(mut console) = crate::drivers::vga_text::get_vga_console_spin() {
+            use core::fmt::Write;
+            let _ = console.write_fmt(args);
+        }
+    });
+}
+
+/// Like print_internal but only writes to serial (not VGA)
+#[doc(hidden)]
+pub fn print_internal_no_vga(args: Arguments) {
+    interrupts::without_interrupts(|| {
+        if let Some(mut serial) = get_serial() {
+            let _ = serial.write_fmt(args);
         }
     });
 }

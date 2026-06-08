@@ -4,7 +4,7 @@ use core::ptr::copy_nonoverlapping;
 use x86_64::{
     VirtAddr,
     registers::control::{Cr3, Cr3Flags},
-    structures::paging::*,
+    structures::paging::{page_table::PageTableEntry, *},
 };
 
 use crate::memory::*;
@@ -41,12 +41,25 @@ impl PageTableContext {
             .expect("Cannot alloc page table for new process.");
 
         // 2. copy current page table to new page table
+        // unsafe {
+        //     copy_nonoverlapping::<PageTable>(
+        //         physical_to_virtual(self.reg.addr.start_address().as_u64()) as *mut
+        // PageTable,         physical_to_virtual(page_table_addr.
+        // start_address().as_u64()) as *mut PageTable,         1,
+        //     );
+        // }
         unsafe {
-            copy_nonoverlapping::<PageTable>(
-                physical_to_virtual(self.reg.addr.start_address().as_u64()) as *mut PageTable,
-                physical_to_virtual(page_table_addr.start_address().as_u64()) as *mut PageTable,
-                1,
-            );
+            let src = physical_to_virtual(self.reg.addr.start_address().as_u64())
+                as *const PageTableEntry;
+            let dst = physical_to_virtual(page_table_addr.start_address().as_u64())
+                as *mut PageTableEntry;
+
+            // 先用 0 填满整个新 PML4（512 个条目）
+            // 确保用户空间（0..255）全空，不带入内核遗留的 identity mapping
+            core::ptr::write_bytes(dst, 0, 512);
+
+            // 只复制内核空间条目 [256..512)，用指针偏移
+            copy_nonoverlapping::<PageTableEntry>(src.add(256), dst.add(256), 256);
         }
 
         // 3. create page table object

@@ -9,7 +9,11 @@ extern crate alloc;
 use alloc::{boxed::Box, vec};
 
 use elf::{load_elf, map_physical_memory, map_range};
-use uefi::{Status, entry, mem::memory_map::MemoryMap};
+use uefi::{
+    Status, entry,
+    mem::memory_map::MemoryMap,
+    proto::console::gop::{GraphicsOutput, ModeInfo, PixelFormat},
+};
 use x86_64::registers::control::*;
 use xmas_elf::ElfFile;
 use ysos_boot::{config::Config, *};
@@ -17,6 +21,56 @@ use ysos_boot::{config::Config, *};
 mod config;
 
 const CONFIG_PATH: &str = "\\EFI\\BOOT\\boot.conf";
+
+// Add this function in crates/boot/src/main.rs
+
+/// Query UEFI Graphics Output Protocol for framebuffer information
+fn get_gop_info() -> Option<crate::GopInfo> {
+    let handle = match uefi::boot::get_handle_for_protocol::<GraphicsOutput>() {
+        Ok(h) => h,
+        Err(e) => {
+            warn!("Failed to get GraphicsOutput handle: {:?}", e);
+            return None;
+        }
+    };
+
+    let mut gop = match uefi::boot::open_protocol_exclusive::<GraphicsOutput>(handle) {
+        Ok(g) => g,
+        Err(e) => {
+            warn!("Failed to open GraphicsOutput protocol: {:?}", e);
+            return None;
+        }
+    };
+
+    let mode_info = gop.current_mode_info();
+    let fb = gop.frame_buffer();
+
+    let fb_addr = gop.frame_buffer().as_mut_ptr() as u64;
+
+    // Determine pixel format
+    let format = match mode_info.pixel_format() {
+        PixelFormat::Rgb => 0,
+        PixelFormat::Bgr => 1,
+        PixelFormat::Bitmask => 2,
+        PixelFormat::BltOnly => 3,
+    };
+
+    let info = crate::GopInfo {
+        fb_addr,
+        fb_size: gop.frame_buffer().size() as u64,
+        width: mode_info.resolution().0 as u32,
+        height: mode_info.resolution().1 as u32,
+        stride: mode_info.stride() as u32,
+        format,
+    };
+
+    info!(
+        "GOP Info: {}x{}, stride={}, fb=0x{:x}, fmt={}",
+        info.width, info.height, info.stride, info.fb_addr, info.format
+    );
+
+    Some(info)
+}
 
 #[entry]
 fn efi_main() -> Status {
@@ -131,6 +185,9 @@ fn efi_main() -> Status {
         None
     };
 
+    // 6.5 Query GOP info before exiting boot services
+    let gop_info = get_gop_info();
+
     // 7. Exit boot and jump to ELF entry
     info!("Exiting boot services...");
 
@@ -145,6 +202,7 @@ fn efi_main() -> Status {
         log_level: config.log_level,
         loaded_apps: apps,
         kernel_pages,
+        gop_info,
     };
 
     // align stack to 8 bytes
