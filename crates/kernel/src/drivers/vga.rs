@@ -91,7 +91,11 @@ impl DrawTarget for VgaDisplay<'_> {
         Ok(())
     }
 
-    fn fill_contiguous<I>(&mut self, area: &embedded_graphics::primitives::Rectangle, colors: I) -> Result<(), Self::Error>
+    fn fill_contiguous<I>(
+        &mut self,
+        area: &embedded_graphics::primitives::Rectangle,
+        colors: I,
+    ) -> Result<(), Self::Error>
     where
         I: IntoIterator<Item = Self::Color>,
     {
@@ -109,8 +113,14 @@ impl DrawTarget for VgaDisplay<'_> {
                         let c = color.0;
                         let base = row_base + (px as usize) * 4;
                         self.vga.fb.add(base).write_volatile((c & 0xFF) as u8); // B
-                        self.vga.fb.add(base + 1).write_volatile(((c >> 8) & 0xFF) as u8); // G
-                        self.vga.fb.add(base + 2).write_volatile(((c >> 16) & 0xFF) as u8); // R
+                        self.vga
+                            .fb
+                            .add(base + 1)
+                            .write_volatile(((c >> 8) & 0xFF) as u8); // G
+                        self.vga
+                            .fb
+                            .add(base + 2)
+                            .write_volatile(((c >> 16) & 0xFF) as u8); // R
                     }
                 }
             }
@@ -274,7 +284,7 @@ impl VgaDriver {
     }
 
     /// Scroll the screen up by `lines` lines of `char_height` pixels each
-    pub fn scroll_up(&self, lines: u32, char_height: u32, bg_color: Color, _fg_color: Color) {
+    pub fn scroll_up(&self, lines: u32, char_height: u32, bg_color: Color) {
         let pixel_lines = lines * char_height;
         if pixel_lines >= self.height {
             self.clear_screen(bg_color);

@@ -50,6 +50,7 @@ pub fn init(boot_info: &'static BootInfo) {
     memory::init(boot_info); // init memory manager
 
     if let Some(ref gop_info) = boot_info.gop_info {
+        // init vga driver
         vga::init(gop_info);
     }
 

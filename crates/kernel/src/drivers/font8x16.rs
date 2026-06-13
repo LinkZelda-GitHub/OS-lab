@@ -1,5 +1,4 @@
 //! 8x16 Bitmap Font (ASCII 0x20 through 0x7E)
-//! Auto-generated from font8x16.inc
 
 #[rustfmt::skip]
 pub static FONT_8X16: [[u8; 16]; 95] = 
