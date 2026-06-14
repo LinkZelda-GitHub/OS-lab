@@ -1,7 +1,17 @@
 //! 8x16 Bitmap Font (ASCII 0x20 through 0x7E)
+//!
+//! Also provides an `embedded-graphics` `MonoFont` via [`get_font_8x16`].
+
+use embedded_graphics::{
+    geometry::Size,
+    image::ImageRaw,
+    mono_font::{DecorationDimensions, MonoFont},
+    pixelcolor::BinaryColor,
+};
+use spin::Once;
 
 #[rustfmt::skip]
-pub static FONT_8X16: [[u8; 16]; 95] = 
+pub const FONT_8X16: [[u8; 16]; 95] =
 
 
 [
@@ -291,3 +301,58 @@ pub static FONT_8X16: [[u8; 16]; 95] =
     [0x00, 0x00, 0x76, 0xDC, 0x00, 0x00, 0x00, 0x00,
      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
 ];
+
+// ── embedded-graphics MonoFont integration ──
+
+/// Glyph index mapping for the 8×16 font.
+///
+/// Maps ASCII printable characters (0x20–0x7E) to glyph indices 0–94.
+/// Non-printable characters fall back to the space glyph (index 0).
+fn glyph_index_8x16(c: char) -> usize {
+    match c {
+        '\x20'..='\x7E' => c as usize - 0x20,
+        _ => 0, // space as fallback
+    }
+}
+
+/// Static function pointer so the glyph mapping reference is `'static`.
+static GLYPH_INDEX_FN: fn(char) -> usize = glyph_index_8x16;
+
+/// Convert the row-major FONT_8X16 bitmap into the format expected by
+/// `ImageRaw<BinaryColor>` (BigEndian byte order — MSB = leftmost pixel,
+/// same as FONT_8X16).  All 95 glyphs are placed side-by-side in a single
+/// 760×16 image, so each row is 95 bytes (one byte per glyph).
+fn convert_font_8x16_to_raw() -> [u8; 1520] {
+    let mut data = [0u8; 1520];
+    for (glyph_idx, glyph) in FONT_8X16.iter().enumerate() {
+        for (row, &byte) in glyph.iter().enumerate() {
+            // Image width = 95 * 8 = 760 pixels, so stride = 95 bytes per row
+            data[row * 95 + glyph_idx] = byte;
+        }
+    }
+    data
+}
+
+/// Lazily-initialised `MonoFont` for the 8×16 bitmap font, suitable for
+/// use with `embedded_graphics::text::Text` and `MonoTextStyle`.
+static FONT_8X16_MONO: Once<MonoFont<'static>> = Once::new();
+
+/// Return a `'static` reference to the `MonoFont` for the built-in 8×16
+/// bitmap font.  The font data is converted once on first call.
+pub fn get_font_8x16() -> &'static MonoFont<'static> {
+    FONT_8X16_MONO.call_once(|| {
+        // The raw image data must also live for 'static
+        static RAW_DATA: Once<[u8; 1520]> = Once::new();
+        let raw = RAW_DATA.call_once(convert_font_8x16_to_raw);
+
+        MonoFont {
+            image: ImageRaw::new(raw, 760), // 95 glyphs × 8 px each
+            glyph_mapping: &GLYPH_INDEX_FN,
+            character_size: Size::new(8, 16),
+            character_spacing: 0,
+            baseline: 13,
+            underline: DecorationDimensions::new(15, 1),
+            strikethrough: DecorationDimensions::new(7, 1),
+        }
+    })
+}

@@ -77,12 +77,16 @@ fn draw_thick_line(vga: &VgaDriver, x1: i32, y1: i32, x2: i32, y2: i32, color: C
         }
         let e2 = 2 * err;
         if e2 >= dy {
-            if x == x2 { break; }
+            if x == x2 {
+                break;
+            }
             err += dy;
             x += sx;
         }
         if e2 <= dx {
-            if y == y2 { break; }
+            if y == y2 {
+                break;
+            }
             err += dx;
             y += sy;
         }

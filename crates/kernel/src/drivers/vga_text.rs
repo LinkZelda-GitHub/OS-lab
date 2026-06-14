@@ -13,10 +13,107 @@ use alloc::collections::VecDeque;
 use alloc::string::String;
 use core::fmt;
 
+use embedded_graphics::{
+    Pixel,
+    draw_target::DrawTarget,
+    geometry::{OriginDimensions, Point, Size},
+    mono_font::{MonoTextStyleBuilder},
+    prelude::*,
+    primitives::Rectangle,
+    text::{Baseline, Text, TextStyleBuilder},
+};
+
 use crate::drivers::{
-    font8x16::FONT_8X16,
+    font8x16::get_font_8x16,
     vga::{Color, get_vga_for_sure},
 };
+
+/// Stack-local `DrawTarget` that writes directly to the framebuffer via the
+/// console's raw pointer, bypassing the VGA mutex.  This preserves the same
+/// deadlock-avoidance strategy as the original manual pixel-writing code.
+struct DirectFb {
+    fb: *mut u8,
+    fb_stride_bytes: u32,
+    fb_width: u32,
+    fb_height: u32,
+}
+
+// SAFETY: The framebuffer is memory-mapped I/O, accessible from any core.
+unsafe impl Send for DirectFb {}
+unsafe impl Sync for DirectFb {}
+
+impl OriginDimensions for DirectFb {
+    fn size(&self) -> Size {
+        Size::new(self.fb_width, self.fb_height)
+    }
+}
+
+impl DrawTarget for DirectFb {
+    type Color = Color;
+    type Error = core::convert::Infallible;
+
+    fn draw_iter<I>(&mut self, pixels: I) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = Pixel<Self::Color>>,
+    {
+        for Pixel(Point { x, y }, color) in pixels {
+            if x >= 0 && y >= 0 {
+                let ux = x as u32;
+                let uy = y as u32;
+                if ux < self.fb_width && uy < self.fb_height {
+                    unsafe {
+                        let base =
+                            (uy as usize) * (self.fb_stride_bytes as usize) + (ux as usize) * 4;
+                        let c = color.raw();
+                        self.fb.add(base).write_volatile((c & 0xFF) as u8); // B
+                        self.fb
+                            .add(base + 1)
+                            .write_volatile(((c >> 8) & 0xFF) as u8); // G
+                        self.fb
+                            .add(base + 2)
+                            .write_volatile(((c >> 16) & 0xFF) as u8); // R
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    fn fill_contiguous<I>(
+        &mut self,
+        area: &Rectangle,
+        colors: I,
+    ) -> Result<(), Self::Error>
+    where
+        I: IntoIterator<Item = Self::Color>,
+    {
+        let x0 = area.top_left.x.max(0) as u32;
+        let y0 = area.top_left.y.max(0) as u32;
+        let w = (area.size.width as u32).min(self.fb_width.saturating_sub(x0));
+        let h = (area.size.height as u32).min(self.fb_height.saturating_sub(y0));
+
+        let mut colors = colors.into_iter();
+        for py in y0..(y0 + h) {
+            unsafe {
+                let row_base = (py as usize) * (self.fb_stride_bytes as usize);
+                for px in x0..(x0 + w) {
+                    if let Some(color) = colors.next() {
+                        let c = color.raw();
+                        let base = row_base + (px as usize) * 4;
+                        self.fb.add(base).write_volatile((c & 0xFF) as u8); // B
+                        self.fb
+                            .add(base + 1)
+                            .write_volatile(((c >> 8) & 0xFF) as u8); // G
+                        self.fb
+                            .add(base + 2)
+                            .write_volatile(((c >> 16) & 0xFF) as u8); // R
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+}
 
 /// Maximum number of lines kept in the scrollback buffer
 const MAX_SCROLLBACK: usize = 1000;
@@ -144,37 +241,68 @@ impl VgaConsole {
         self.fill_rect_direct(0, body_y, self.cols * self.char_width, body_h, self.bg_color);
     }
 
-    /// Draw a single character at (col, row) position using the built-in 8x16
-    /// bitmap font. Uses direct framebuffer access.
+    /// Draw a single character at (col, row) position using
+    /// `embedded_graphics::text::Text` with the built-in 8×16 `MonoFont`.
+    /// Uses direct framebuffer access via [`DirectFb`].
     fn draw_char_at(&self, ch: char, col: u32, row: u32, fg: Color, bg: Color) {
-        let px = col * self.char_width;
-        let py = self.y_offset + row * self.char_height;
+        let px = (col * self.char_width) as i32;
+        let py = (self.y_offset + row * self.char_height) as i32;
 
-        // Fill character cell with background
-        self.fill_rect_direct(px, py, self.char_width, self.char_height, bg);
+        let mut fb = DirectFb {
+            fb: self.fb,
+            fb_stride_bytes: self.fb_stride_bytes,
+            fb_width: self.fb_width,
+            fb_height: self.fb_height,
+        };
 
-        // Draw the character
-        let idx = ch as usize;
-        if idx >= 0x20 && idx <= 0x7E {
-            let glyph_idx = idx - 0x20;
-            if glyph_idx < FONT_8X16.len() {
-                let bitmap = &FONT_8X16[glyph_idx];
-                for (line, &byte) in bitmap.iter().enumerate() {
-                    for bit in 0..8u32 {
-                        if (byte >> (7 - bit)) & 1 != 0 {
-                            self.write_pixel(px + bit, py + line as u32, fg);
-                        }
-                    }
-                }
-            }
-        }
+        let style = MonoTextStyleBuilder::new()
+            .font(get_font_8x16())
+            .text_color(fg)
+            .background_color(bg)
+            .build();
+
+        let mut buf = [0u8; 4];
+        let s = ch.encode_utf8(&mut buf);
+        let _ = Text::with_text_style(
+            s,
+            Point::new(px, py),
+            style,
+            TextStyleBuilder::new().baseline(Baseline::Top).build(),
+        )
+        .draw(&mut fb);
     }
 
-    /// Render a single string line at the given screen row
+    /// Render a single string line at the given screen row using
+    /// `embedded_graphics::text::Text`.  Characters beyond the visible
+    /// column count are clipped by the framebuffer bounds.
     fn render_line_at(&self, line: &str, row: u32) {
-        for (col, ch) in line.chars().take(self.cols as usize).enumerate() {
-            self.draw_char_at(ch, col as u32, row, self.fg_color, self.bg_color);
-        }
+        let px = 0i32;
+        let py = (self.y_offset + row * self.char_height) as i32;
+
+        let mut fb = DirectFb {
+            fb: self.fb,
+            fb_stride_bytes: self.fb_stride_bytes,
+            fb_width: self.fb_width,
+            fb_height: self.fb_height,
+        };
+
+        let style = MonoTextStyleBuilder::new()
+            .font(get_font_8x16())
+            .text_color(self.fg_color)
+            .background_color(self.bg_color)
+            .build();
+
+        // Truncate to visible columns to avoid unnecessary rendering
+        let visible: alloc::string::String =
+            line.chars().take(self.cols as usize).collect();
+
+        let _ = Text::with_text_style(
+            &visible,
+            Point::new(px, py),
+            style,
+            TextStyleBuilder::new().baseline(Baseline::Top).build(),
+        )
+        .draw(&mut fb);
     }
 
     /// Re-render the entire body area from the scrollback buffer based on
@@ -530,41 +658,23 @@ pub fn init_vga_console_for_shell() -> u32 {
         let header_fg = Color::new(0, 220, 160);
         let header_bg = Color::new(12, 14, 20);
 
-        // Helper lambda to draw a header string at a given row
+        // Helper lambda to draw a header string at a given row using
+        // embedded_graphics through VgaDisplay (we already hold the VGA lock).
         let draw_header_text = |text: &str, row: u32, fg: Color, bg: Color| {
+            let mut display = vga.display();
+            let style = MonoTextStyleBuilder::new()
+                .font(get_font_8x16())
+                .text_color(fg)
+                .background_color(bg)
+                .build();
             let py = separator_y + row * char_height;
-            for (col, ch) in text.chars().enumerate() {
-                let px = col as u32 * char_width;
-                vga.fill_rect(px, py, char_width, char_height, bg);
-                let idx = ch as usize;
-                if idx >= 0x20 && idx <= 0x7E {
-                    let glyph_idx = idx - 0x20;
-                    if glyph_idx < FONT_8X16.len() {
-                        let bitmap = &FONT_8X16[glyph_idx];
-                        for (line, &byte) in bitmap.iter().enumerate() {
-                            for bit in 0..8u32 {
-                                if (byte >> (7 - bit)) & 1 != 0 {
-                                    if px + bit < vga_width && (py + (line as u32)) < vga_height {
-                                        unsafe {
-                                            let fb = vga.fb_ptr() as *mut u8;
-                                            let sb = vga.stride_pixels() * 4;
-                                            let off = ((py + line as u32) as usize)
-                                                * (sb as usize)
-                                                + ((px + bit) as usize) * 4;
-                                            let c = fg.raw();
-                                            fb.add(off).write_volatile((c & 0xFF) as u8);
-                                            fb.add(off + 1)
-                                                .write_volatile(((c >> 8) & 0xFF) as u8);
-                                            fb.add(off + 2)
-                                                .write_volatile(((c >> 16) & 0xFF) as u8);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            let _ = Text::with_text_style(
+                text,
+                Point::new(0, py as i32),
+                style,
+                TextStyleBuilder::new().baseline(Baseline::Top).build(),
+            )
+            .draw(&mut display);
         };
 
         // Draw YSOS banner in the fixed header

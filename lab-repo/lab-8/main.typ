@@ -3,7 +3,7 @@
 
 #show: report.with(
   title: "实验 0x08 实验报告",
-  subtitle: "VGA 显示输出与图形界面",
+  subtitle: "VGA 显示输出",
   name: "何亮",
   stdid: "24325005",
   classid: "202520804（陈鹏飞老师班级）",
@@ -13,17 +13,16 @@
   banner: "./images/sysu.png",
 )
 
-== 实验概述
+== 实现方案
 
-本实验的目标是在 bootloader 中获取 UEFI 图形输出协议（GOP，Graphics Output Protocol）提供的显示信息，并将其传递给内核，进而在内核中实现一个基于线性帧缓冲（Linear Framebuffer）的 VGA 图形输出驱动。在此基础上，利用 `embedded-graphics` 等库实现字符渲染与 Shell 显示，并激活键盘中断驱动，实现通过 QEMU GUI 界面的输入输出交互。
-
-整个实验的核心流程可以概括为以下几步：
+本实验的目标是实现 VGA 显示输出，为用户提供 GUI ，核心流程可以概括为以下几步：
 
 + 在 bootloader 中，通过 `get_handle_for_protocol::<GraphicsOutput>()` 获取 GOP 信息（帧缓冲地址、分辨率、像素格式等），并传递给内核
 + 在内核中，基于 GOP 信息初始化 VGA 帧缓冲驱动，支持逐像素绘制、矩形填充、清屏、滚动等操作
-+ 利用 `embedded-graphics` 库实现字符渲染，将内置的 8×16 位图字体绘制到帧缓冲上
++ 利用 `embedded-graphics` 库实现字符渲染：将内置的 8*16 位图字体转换为 `MonoFont`，通过 `DirectFb`（栈上 `DrawTarget`，绕开 VGA 互斥锁直接写入帧缓冲，因为我们的 VGA 互斥锁会被 `clock_demo` 线程获取用于绘制时钟，如果要进行日志输出需要绕开）进行绘制
 + 实现一个 VGA 文本控制台，支持字符输出、换行、滚屏、回滚缓冲区等功能，并将其对接到日志系统
-+ 激活键盘中断，通过共享输入缓冲区（与串口共用）的方式响应键盘输入
++ 实现分屏布局与动画模拟时钟：上半部分使用 Bresenham 直线算法 + 方形笔刷绘制粗线指针和刻度，借助 `embedded-graphics::Text` 渲染小时数字，基于 UEFI 时间进行帧同步；下半部分为文本控制台
++ 激活键盘中断，通过与串口共享输入缓冲区的方式响应键盘输入
 
 == 在 Bootloader 中获取图形输出信息
 
@@ -53,7 +52,6 @@ fn get_gop_info() -> Option<crate::GopInfo> {
             return None;
         }
     };
-
     let mut gop = match uefi::boot::open_protocol_exclusive::<GraphicsOutput>(handle) {
         Ok(g) => g,
         Err(e) => {
@@ -61,7 +59,6 @@ fn get_gop_info() -> Option<crate::GopInfo> {
             return None;
         }
     };
-
     let mode_info = gop.current_mode_info();
     let fb = gop.frame_buffer();
 
@@ -172,13 +169,11 @@ let stacktop = stack_start + stack_size * 0x1000 - 8;
 jump_to_entry(&bootinfo, stacktop);
 ```
 
-// TODO: 截图 — GOP 数据流示意图（从 UEFI Bootloader 到内核 VGA 驱动的数据传递路径）
-
 == VGA 帧缓冲驱动的实现
 
 === `VgaDriver` 结构体
 
-VGA 驱动定义在 `crates/kernel/src/drivers/vga.rs` 中，我们使用原始指针 `*mut u8` 访问帧缓冲内存。这里的 `cursor_x` 和 `cursor_y` 参数表示当前输入光标所在的位置，为了方式多线程写导致混乱，采用了 `AtomicU32` 原子类型。
+VGA 驱动定义在 `crates/kernel/src/drivers/vga.rs` 中，我们使用原始指针 `*mut u8` 访问帧缓冲内存，这样设计的原因是，我们后续将进行锁的设计，绘制时钟的进程获取锁重新绘制时钟，为了不引起日志输出等的卡顿，这部分使用裸指针访问绕开锁机制。这里的 `cursor_x` 和 `cursor_y` 参数表示当前输入光标所在的位置，为了方式多线程写导致混乱，采用了 `AtomicU32` 原子类型。
 
 ```rs
 pub struct VgaDriver {
@@ -233,7 +228,7 @@ impl VgaDriver {
 
 === 像素格式
 
-QEMU 默认的 VGA 帧缓冲使用 BGRx 格式（即每个像素 4 字节，从低到高依次为 Blue、Green、Red、未使用字节）。我们定义了 `Color` 类来表示像素颜色，同时我们也加入了一些颜色常量，便于绘图
+QEMU 默认的 VGA 帧缓冲使用 BGRx 格式（即每个像素 4 字节，从低到高依次为 Blue、Green、Red、未使用字节）。我们定义了 `Color` 类来表示像素颜色，同时我们也加入了一些颜色常量，便于绘图，同时我们为 `Color` 实现了 embedded-graphics 需要的 PixelColor trait。
 
 ```rs
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -250,6 +245,10 @@ impl Color {
     pub const fn new(r: u8, g: u8, b: u8) -> Self {
         Self(0x00000000 | ((r as u32) << 16) | ((g as u32) << 8) | (b as u32))
     }
+}
+
+impl PixelColor for Color {
+    type Raw = RawU32;
 }
 ```
 
@@ -277,7 +276,7 @@ pub fn draw_pixel(&self, x: u32, y: u32, color: Color) {
 
 这里使用 `write_volatile` 而非普通写入的原因是，帧缓冲属于 MMIO 区域，编译器不能由于代码只是对其写入而没有读入而对其进行优化，因为其会对 VGA 显示输出造成影响。
 
-`fill_rect`：矩形填充，即我们在 `[x, x + w -1] x [y, y + h - 1]` 的区域内绘制同一个颜色 `color`，
+`fill_rect`：矩形填充，即我们在 `[x, x + w -1] * [y, y + h - 1]` 的区域内绘制同一个颜色 `color`，
 
 ```rs
 pub fn fill_rect(&self, x: u32, y: u32, w: u32, h: u32, color: Color) {
@@ -386,11 +385,13 @@ pub fn init(gop_info: &GopInfo) {
 
 `once_mutex!` 宏创建一个 `spin::Once<spin::Mutex<T>>` 全局变量，确保只初始化一次。`guard_access_fn!` 宏生成 `get_vga()` 非阻塞加锁和 `get_vga_for_sure()`阻塞式加锁两个访问函数。
 
-== 利用 `embedded-graphics` 实现字符渲染
+== 利用 embedded-graphics 实现字符渲染
+
+embedded-graphics 库要求我们实现三个 traits，即 `PixelColor`，`OriginDimensions` 以及 `DrawTarget`，这三个 traits 我们在前面已经实现了，因此我们下面可以直接使用其库内的方法了！
 
 === 字体定义
 
-为实现字符渲染，我们需要一个等宽位图字体，本实验使用了一个经典的 8x16 像素的 ASCII 字体，定义在 `crates/kernel/src/drivers/font8x16.rs` 中。
+为实现字符渲染，我们需要一个等宽位图字体，本实验使用了一个经典的 8×16 像素的 ASCII 字体，定义在 `crates/kernel/src/drivers/font8x16.rs` 中。
 
 字体覆盖 ASCII 可打印字符 0x20（空格）到 0x7E（波浪号），共 95 个字符。每个字符的字形数据为 16 字节（16 行，每行 8 位），编码形式为一个 `[[u8; 16]; 95]` 数组。如字符 `'A'`（ASCII 0x41，数组索引 `0x41 - 0x20 = 33`）的字形数据为：
 
@@ -403,7 +404,7 @@ pub fn init(gop_info: &GopInfo) {
 
 === VGA 文本控制台 `VgaConsole`
 
-`VgaConsole`（定义在 `crates/kernel/src/drivers/vga_text.rs`）是 VGA 文本输出的核心组件。它保存了帧缓冲的引用，支持字符绘制、光标管理、行自动换行、滚屏等功能。
+`VgaConsole`（定义在 `crates/kernel/src/drivers/vga_text.rs`）是 VGA 文本输出的核心组件。它保存了帧缓冲的引用，支持字符绘制、光标管理、行自动换行、滚屏等功能。这里使用的是裸指针写入，为了绕开前面我们对 `VgaDriver` 实现的锁机制。
 
 定义如下，
 ```rs
@@ -433,37 +434,43 @@ pub struct VgaConsole {
 
 ```rs
 fn draw_char_at(&self, ch: char, col: u32, row: u32, fg: Color, bg: Color) {
-    let px = col * self.char_width;
-    let py = self.y_offset + row * self.char_height;
+    let px = (col * self.char_width) as i32;
+    let py = (self.y_offset + row * self.char_height) as i32;
 
-    // Fill character cell with background
-    self.fill_rect_direct(px, py, self.char_width, self.char_height, bg);
+    let mut fb = DirectFb {
+        fb: self.fb,
+        fb_stride_bytes: self.fb_stride_bytes,
+        fb_width: self.fb_width,
+        fb_height: self.fb_height,
+    };
 
-    // Draw the character
-    let idx = ch as usize;
-    if idx >= 0x20 && idx <= 0x7E {
-        let glyph_idx = idx - 0x20;
-        if glyph_idx < FONT_8X16.len() {
-            let bitmap = &FONT_8X16[glyph_idx];
-            for (line, &byte) in bitmap.iter().enumerate() {
-                for bit in 0..8u32 {
-                    if (byte >> (7 - bit)) & 1 != 0 {
-                        self.write_pixel(px + bit, py + line as u32, fg);
-                    }
-                }
-            }
-        }
-    }
+    let style = MonoTextStyleBuilder::new()
+        .font(get_font_8x16())
+        .text_color(fg)
+        .background_color(bg)
+        .build();
+
+    let mut buf = [0u8; 4];
+    let s = ch.encode_utf8(&mut buf);
+    let _ = Text::with_text_style(
+        s,
+        Point::new(px, py),
+        style,
+        TextStyleBuilder::new().baseline(Baseline::Top).build(),
+    )
+    .draw(&mut fb);
 }
 ```
 
-该函数先将字符单元格以背景色填充，然后遍历字形的每一行每一列，在位为 1 的位置写入前景像素。绘制时使用 `fb_stride_bytes` 直接寻址帧缓冲，而不是经过 `VgaDriver`（绕过互斥锁，提高性能）。
+我们在这里实现了一个 `DirectFb` 类，它直接通过 `VgaConsole` 保存的帧缓冲裸指针写入像素，不经过 `VgaDriver` 的互斥锁。这保留了原有代码的死锁避免策略：日志系统在中断上下文中调用 `try_write_to_vga` 时，即使 VGA 锁被时钟绘制线程持有，文本输出仍能正常进行。
+
+`MonoTextStyleBuilder` 将前景色和背景色绑定到 `MonoFont` 上，`Text::with_text_style(...).draw(&mut fb)` 在渲染时自动将字形的每一位映射为前景/背景 `Color` 值，并对每个字符单元格的矩形区域进行填充，将"填充背景"和"绘制前景"两步合为一次 `fill_contiguous` 调用，一定程度上提升了性能。
 
 `write_char`：单字符写入，
 
-处理 `\n`（换行）、`\r`（回车）、`\x08`（退格）、`\t`（制表符）以及可打印字符。当光标超出右边界时自动换行，超出底部时自动向上滚动。
+处理 `\n`（换行）、`\r`（回车）、`\x08`（退格）、`\t`（制表符）以及可打印字符。当光标超出右边界时自动换行，超出底部时自动向上滚动。这部分代码请见 `vga_text.rs`。
 
-`write_str` 和 `fmt::Write`，
+然后实现 `write_str` 和 `fmt::Write`，实现了 `fmt::Write` trait 后，便可以使用 Rust 的 `write!` 和 `writeln!` 宏直接向 VGA 控制台输出格式化文本。
 
 ```rs
 pub fn write_str(&mut self, s: &str) {
@@ -480,13 +487,11 @@ impl fmt::Write for VgaConsole {
 }
 ```
 
-实现了 `fmt::Write` trait 后，便可以使用 Rust 的 `write!` 和 `writeln!` 宏直接向 VGA 控制台输出格式化文本。
-
-=== 滚动回看（Scrollback）机制
+=== 滚动回看 Scrollback 机制
 
 控制台维护了一个最多 1000 行的 `VecDeque<String>` 滚动缓冲区。所有被滚动出屏幕的文本行都会存入该缓冲区。
 
-当用户按上/下方向键时（由键盘中断驱动调用 `scroll_console_up()` / `scroll_console_down()`），控制台会重新渲染滚动缓冲区中的历史内容：
+当用户按上/下方向键时，即由键盘中断驱动调用 `scroll_console_up()` / `scroll_console_down()` 时，控制台会重新渲染滚动缓冲区中的历史内容，重新渲染使用的如下实现的的 `render_body` 函数，`scrollback` 保存了滚动的缓存数据，通过自身记录的 `scroll_pos` 和缓冲区大小计算得出当前屏幕上应该显示的部分，然后调用 `render_line_at` 函数逐行绘制，
 
 ```rs
 pub fn render_body(&mut self) {
@@ -505,22 +510,7 @@ pub fn render_body(&mut self) {
 }
 ```
 
-当 `scroll_pos == 0` 时，控制台处于"实时模式"——新输出直接绘制到屏幕上。当 `scroll_pos > 0` 时，新输出被缓冲到 `scrollback` 而不触及帧缓冲，并设置 `dirty_while_scrolled` 标志以提示用户有新的输出。
-
-=== 分屏布局
-
-`VgaConsole` 支持 `y_offset` 偏移参数，使其仅占用屏幕的下半部分。在分屏模式下：
-
-+ 屏幕上方约 45% 的区域用于绘制旋转时钟（由 `clock_demo` 进程负责）
-+ 屏幕下方约 55% 的区域用于文本控制台
-
-控制台进一步分为两部分：
-+ Header 区域（前 8 行固定）：显示 YSOS ASCII 徽标，不可滚动
-+ Body 区域（剩余行）：Shell 交互 + 日志输出的可滚动区域
-
-初始化函数 `init_vga_console_for_shell()` 在 `crates/kernel/src/drivers/vga_text.rs` 中实现，返回时钟区域的高度（像素），供 `clock_demo` 进程使用。
-
-// TODO: 截图 — VGA Shell 分屏显示效果（上半部分为时钟动画区域，下半部分为文本控制台，显示 YSOS banner 和日志输出）
+当 `scroll_pos == 0` 时，控制台处于"实时模式"的新输出直接绘制到屏幕上。当 `scroll_pos > 0` 时，新输出被缓冲到 `scrollback` 而不触及帧缓冲，并设置 `dirty_while_scrolled` 标志以提示用户有新的输出。
 
 == Shell 输出与日志系统对接
 
@@ -548,10 +538,7 @@ fn log(&self, record: &Record) {
     }
 }
 ```
-
-日志同时输出到两个通道：
-1. 串口：主通道，始终输出，不丢失
-2. VGA 控制台：辅助通道，使用 `try_lock` 非阻塞写入。如果 VGA 控制台锁被其他进程持有，则跳过本次输出（best-effort），保证不会因日志输出导致死锁。使用 `try_lock` 的原因是日志可能在中断上下文中被调用，此时不能阻塞。
+这里的 VGA console 使用 `try_write_to_vga` 非阻塞写入，避免因为在中断调用的时候，由于原进程没有释放锁的情况输出日志下造成死锁。
 
 === `print!` / `println!` 的双通道输出
 
@@ -573,17 +560,16 @@ pub fn print_internal(args: Arguments) {
 }
 ```
 
-`get_vga_console_spin()` 通过自旋等待获取锁，保证了在关中断的上下文中，输出到 VGA 的日志不会丢失。
+`get_vga_console_spin()` 通过自旋等待获取锁，因为我们绘制时钟进程使用的是 `VgaDriver` 的锁，而且键盘中断不会自旋等待，且此处关了中断，因此这里自旋等待锁不会造成死锁。
 
-=== 应用进程的 Shell
+我们的 shell 通过系统调用进行输入输出。shell 的 `stdin` 读取会最终调用 `input::get_line()`，后者阻塞地从共享输入缓冲区（`INPUT_BUF`）读取字符，读取到的字符同时回显到串口和 VGA 控制台，最终效果如下，可以看到我们的命令行和 GUI 均得到了同样的输出，
+#image("./images/log.png")
 
-用户态的 Shell 程序（`/APP/sh`）通过系统调用进行输入输出。Shell 的 `stdin` 读取会最终调用 `input::get_line()`，后者阻塞地从共享输入缓冲区（`INPUT_BUF`）读取字符。读取到的字符同时回显到串口和 VGA 控制台。
+== 加分项
 
-// TODO: 截图 — Shell 输出效果（用户输入命令后在 VGA 屏幕上的回显效果，包括日志和 Shell 提示符）
+=== 键盘输入实现 IO 交互
 
-== 键盘驱动的实现
-
-=== PS/2 键盘控制器
+==== PS/2 键盘控制器
 
 PS/2 键盘控制器使用 I/O 端口 `0x60`（数据端口）和 `0x64`（状态/命令端口）与 CPU 通信。驱动实现在 `crates/kernel/src/drivers/keyboard.rs` 中。
 
@@ -593,7 +579,7 @@ PS/2 键盘控制器使用 I/O 端口 `0x60`（数据端口）和 `0x64`（状�
 
 驱动使用 `pc-keyboard` crate 将原始扫描码（Scancode Set 1）解码为 Unicode 字符或 RawKey 事件。
 
-=== 中断注册
+==== 中断注册
 
 键盘中断为 IRQ1，通过 IO APIC 路由到 CPU0。在 `crates/kernel/src/interrupt/keyboard.rs` 中：
 
@@ -616,7 +602,7 @@ pub extern "x86-interrupt" fn keyboard_handler(_st: InterruptStackFrame) {
 enable_irq(Irq::Keyboard as u8, 0); // enable IRQ1 for CPU0
 ```
 
-=== 共享输入缓冲区
+==== 共享输入缓冲区
 
 键盘输入和串口输入共用同一个无锁队列 `INPUT_BUF`（定义在 `crates/kernel/src/drivers/input.rs` 中）：
 
@@ -638,14 +624,11 @@ pub fn try_pop_key() -> Option<Key> {
 }
 ```
 
-`ArrayQueue` 来自 `crossbeam_queue` crate，是一个无锁的 MPSC（多生产者单消费者）队列。两个中断处理程序（键盘和串口）都可以安全地向队列推送数据。
+`ArrayQueue` 来自 `crossbeam_queue` crate，是一个无锁的 MPSC 多生产者单消费者队列。两个中断处理程序，即键盘和串口都可以安全地向队列推送数据。
 
-=== `get_line()` 的行编辑功能
+==== `get_line()` 的行编辑功能
 
-`input::get_line()` 实现了基本的行编辑功能：
-- 支持退格删除（Backspace）
-- 回车结束输入
-- 同时向串口和 VGA 控制台回显字符
+`input::get_line()` 加入了在写入串口的同时向 VGA 控制台回显字符的功能，
 
 ```rs
 pub fn get_line() -> String {
@@ -679,27 +662,23 @@ pub fn get_line() -> String {
 }
 ```
 
-=== 方向键的滚动控制
+==== 方向键的滚动控制
 
-在键盘驱动的 `handle_scancode` 方法中，上/下方向键和 PageUp/PageDown 键被映射为控制台滚动操作：
+在键盘驱动的 `handle_scancode` 方法中，我们捕获了上/下方向键和 PageUp/PageDown 键被映射为控制台滚动操作，其他可见字符放入输入缓冲区，而这些不可见字符在这里提前处理，这使得用户可以在 QEMU GUI 窗口中使用方向键翻阅控制台的历史输出。
 
 ```rs
+// See keyboard.rs for all code
 DecodedKey::RawKey(key) => {
     match key {
         KeyCode::ArrowUp => vga_text::scroll_console_up(),
         KeyCode::ArrowDown => vga_text::scroll_console_down(),
         KeyCode::PageUp => vga_text::scroll_console_up_pages(1),
         KeyCode::PageDown => vga_text::scroll_console_down_pages(1),
-        // ...
     }
 }
 ```
 
-这使得用户可以在 QEMU GUI 窗口中使用方向键翻阅控制台的历史输出。
-
-== 加分项
-
-=== 键盘输入实现 IO 交互
+这里的 `scroll_console_...` 方法，内部采用 `try_lock` 获得锁，因此不会造成在某个进程进行键盘输入中断时发生死锁的情况。
 
 通过上述键盘中断驱动与共享输入缓冲区的实现，我们成功实现了 QEMU GUI 窗口中的输入输出交互。用户可以直接在 QEMU GUI 窗口中：
 - 看到彩色文本的 Shell 提示符
@@ -710,90 +689,154 @@ DecodedKey::RawKey(key) => {
 === 分屏与动画时钟
 
 我们实现了分屏布局：
-- 屏幕上半部分（约 45%）：运行 `clock_demo` 内核线程，绘制一个实时旋转的模拟时钟
-- 屏幕下半部分（约 55%）：文本控制台，包含 YSOS 标题头和可滚动的日志/Shell 输出区域
+- 屏幕上半部分：运行 `clock_demo` 内核线程，绘制一个实时旋转的模拟时钟
+- 屏幕下半部分：文本控制台，包含 YSOS 标题头和可滚动的日志/Shell 输出区域
 
-时钟的实现使用了基本的三角函数（`libm::cos` / `libm::sin`）计算指针角度，通过逐像素绘制实现了秒针、分针、时针、刻度标记和小时数字的渲染。时钟以每秒一帧的速度更新，通过 `get_time_ms()` 读取 UEFI 时间来进行帧同步。
+下面我们实现时钟的绘制
 
-// TODO: 截图 — 时钟动画效果（屏幕上半部分的模拟时钟，包含刻度、数字和旋转的时分秒指针）
+==== 帧同步
 
-=== 完整的内核启动流程
-
-综合以上所有组件，系统的初始化流程如下（`kernel/src/lib.rs` 的 `init` 函数）：
+帧同步采用自旋等待：记录帧开始的时间戳，循环读取时间直到差值达到 1000 ms，保证每秒恰好绘制一帧，我们这里没有使用 `service.rs` 中实现的 `sys_get_time` 方法，而是在重写了一个相同的 `get_time_ms` 函数获取时间，从而避免各个模块之间的耦合
 
 ```rs
-pub fn init(boot_info: &'static BootInfo) {
-    unsafe {
-        uefi::table::set_system_table(boot_info.system_table.cast().as_ptr());
+let start = get_time_ms();
+loop {
+    if get_time_ms().wrapping_sub(start) >= 1000 {
+        break;
     }
-
-    serial::init();           // 1. 初始化串口输出
-    logger::init("Debug");    // 2. 初始化日志系统
-    memory::allocator::init();// 3. 初始化内核堆分配器
-    memory::address::init(boot_info);  // 4. 设置物理地址偏移
-    memory::gdt::init();      // 5. 初始化 GDT
-    memory::init(boot_info);  // 6. 初始化内存管理器
-
-    if let Some(ref gop_info) = boot_info.gop_info {
-        vga::init(gop_info);  // 7. 初始化 VGA 帧缓冲驱动
-    }
-
-    memory::user::init();     // 8. 初始化用户堆分配器
-    interrupt::init();        // 9. 初始化中断系统（含键盘 IRQ）
-    keyboard::init();         // 10. 初始化键盘驱动
-    filesystem::init();       // 11. 初始化文件系统
-    proc::init(boot_info);    // 12. 初始化进程管理
-
-    x86_64::instructions::interrupts::enable();
-    info!("YatSenOS initialized.");
+    core::hint::spin_loop();
 }
 ```
 
-随后 `kernel_main` 调用 `init_vga_console_for_shell()` 完成分屏设置，并创建 `clock_demo` 后台线程和 Shell 进程。
+==== 粗线绘制
 
-== 原理总结
+为了在模拟时钟中绘制清晰的指针和刻度线，我们实现了 `draw_thick_line` 函数。该函数基于经典 Bresenham 直线算法，在每个步进点绘制一个 `width * width` 的实心正方形，从而实现粗线的绘制，且渲染的线条无论方向如何都保持一致粗细，不会出现断点。
 
-本实验的核心在于理解 UEFI GOP 协议的运作方式以及帧缓冲（Framebuffer）驱动的原理。
+```rs
+fn draw_thick_line(vga: &VgaDriver, x1: i32, y1: i32, x2: i32, y2: i32,
+                   color: Color, width: i32) {
+    let dx = (x2 - x1).abs();
+    let dy = -(y2 - y1).abs();
+    let sx = if x1 < x2 { 1 } else { -1 };
+    let sy = if y1 < y2 { 1 } else { -1 };
+    let mut err = dx + dy;
+    let mut x = x1;
+    let mut y = y1;
+    let half = width / 2;
 
-UEFI GOP 协议本质上为 OS 提供了一个线性帧缓冲（Linear Framebuffer），即显卡显存被直接映射到一段连续的物理地址空间中。只要向这段内存的特定偏移写入特定格式的像素数据，显卡就会在对应的屏幕位置上显示相应的颜色。这种方式简单高效，不需要与显卡驱动进行复杂交互，是现代 OS 引导阶段图形输出的标准做法。
+    loop {
+        // 以 (x, y) 为中心绘制 width×width 的实心方块
+        for wy in -half..=half {
+            for wx in -half..=half {
+                vga.draw_pixel((x + wx) as u32, (y + wy) as u32, color);
+            }
+        }
+        if x == x2 && y == y2 { break; }
+        let e2 = 2 * err;
+        if e2 >= dy { err += dy; x += sx; }
+        if e2 <= dx { err += dx; y += sy; }
+    }
+}
+```
 
-帧缓冲的工作原理可以类比为一块画布：
-+ `fb_addr` 是画布在内存中的起始地址
-+ `(width, height)` 决定了画布上有多少个像素（即分辨率）
-+ `stride` 是画布一行有多少个"像素单元"（由于性能优化的对齐要求，可能略大于 width）
-+ `pixel_format` 决定了每个像素的数据如何编码颜色信息（RGB、BGR 等）
+==== 刻度绘制
 
-当我们向帧缓冲写入数据时，显卡通过扫描帧缓冲的内容，将像素数据转换为 VGA/DVI/HDMI 等视频信号输出到显示器。因此，"绘制图形"的本质就是向帧缓冲中的特定位置写入正确的颜色值。
+表盘上共 60 个刻度位置，每秒一个。其中整小时位置（即 `s % 5 == 0`）使用较长的亮色刻度（长 ~14px，颜色 RGB(200, 210, 230)，宽 2px），其余位置使用较短的暗色刻度（长 ~6px，颜色 RGB(50, 60, 80)，宽 1px）。
 
-本实验中，我们通过 `get_handle_for_protocol::<GraphicsOutput>()` 获取 GOP 协议实例，读取帧缓冲的物理地址和显示参数，在退出 UEFI Boot Services 前将这些信息封装为 `GopInfo`，并通过 `BootInfo` 结构体传递给内核。内核收到后，将物理地址转换为虚拟地址（加上 `physical_memory_offset`），从而可以在分页环境下安全地访问帧缓冲内存。基于此，我们实现了逐像素绘制、矩形填充、滚屏等基本操作，并进一步构建了字符渲染引擎、文本控制台和动画时钟。
+每个刻度的角度为 `s * (π / 30) - π / 2`（减去 π/2 使 0 秒位置在 12 点钟方向）。内端点位置由 `inner_r` 决定，外端点由 `outer_r` 决定，两者均基于时钟半径计算。
 
-== 思考题
+```rs
+for s in 0..60 {
+    let angle = (s as f64) * (PI / 30.0) - PI / 2.0;
+    let outer_r = (radius - 8) as f64;
+    let inner_r = if s % 5 == 0 {
+        (radius - 22) as f64  // 整点长刻度
+    } else {
+        (radius - 14) as f64  // 普通短刻度
+    };
+    let x1 = (cx as f64 + inner_r * libm::cos(angle)) as i32;
+    let y1 = (cy as f64 + inner_r * libm::sin(angle)) as i32;
+    let x2 = (cx as f64 + outer_r * libm::cos(angle)) as i32;
+    let y2 = (cy as f64 + outer_r * libm::sin(angle)) as i32;
+    draw_thick_line(&vga, x1, y1, x2, y2, color, width);
+}
+```
 
-=== 为什么要在退出 UEFI Boot Services 之前获取 GOP 信息？退出之后还能获取吗？
+==== 时刻数字
 
-UEFI 将系统的生命周期分为多个阶段。在 Boot Services 阶段（即内核接手控制权之前），UEFI 提供了一系列协议供 bootloader 使用，包括 GOP（图形输出协议）、文件系统协议、内存分配服务等。一旦调用了 `exit_boot_services()`，系统进入 Runtime Services 阶段，所有 Boot Services 协议都不再可用，相关的内存也会被回收。
+时刻通过 `embedded_graphics` 的 `Text` + `MonoTextStyleBuilder` + 内建 `FONT_6X10` 渲染。每个数字的位置由对应角度计算得出，位于刻度线内侧约 30px 处：
 
-因此，必须在 `exit_boot_services()` 之前获取 GOP 信息，并保存帧缓冲的物理地址。退出后，虽然 UEFI 的 GOP 协议不可用，但帧缓冲的物理地址仍然有效——因为显卡依然在扫描那段内存输出画面。只要内核正确地映射了该物理地址并继续向帧缓冲写入数据，画面就可以持续更新。
+```rs
+let mut display = VgaDisplay::new(&vga);
+let num_style = MonoTextStyleBuilder::new()
+    .font(&FONT_6X10)
+    .text_color(Color::new(200, 210, 230))
+    .build();
+let nums = [12u32, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+for (i, &num) in nums.iter().enumerate() {
+    let angle = (i as f64) * (PI / 6.0) - PI / 2.0;
+    let r = (radius - 30) as f64;
+    let nx = (cx as f64 + r * libm::cos(angle) - 3.0) as i32;
+    let ny = (cy as f64 + r * libm::sin(angle) - 5.0) as i32;
+    let _ = Text::with_text_style(
+        &alloc::format!("{}", num),
+        Point::new(nx, ny),
+        num_style,
+        TextStyleBuilder::new().baseline(Baseline::Top).build(),
+    ).draw(&mut display);
+}
+```
 
-=== 为什么使用 `write_volatile` 而非普通的指针写入？
+这里使用 `VgaDisplay`（需要持有 VGA 锁）而非 `DirectFb`，因为时钟绘制在持锁的上下文中运行，通过标准 `get_vga()` 获取帧缓冲访问权。
 
-帧缓冲位于 MMIO（Memory-Mapped I/O）区域，对它的写入是"有副作用"的（会改变屏幕上的像素）。Rust 编译器的优化器可能对普通写入进行合并、重排甚至消除（如果后续有对同一位置的覆盖写入）。使用 `write_volatile` 可以告诉编译器：
-+ 每次写入都必须确实发生，不能被优化掉
-+ 写入的顺序必须保持代码中的顺序
-+ 不能对写入进行合并
+==== 指针（时分秒）
 
-=== 为什么文本控制台需要保存帧缓冲的副本引用，而不是每次都通过 `VgaDriver` 访问？
+三条指针的角度由累计秒数 `total_seconds` 计算：
 
-主要是为了性能和避免死锁。`VgaDriver` 的访问受互斥锁保护。如果文本控制台每次写字符都要获取 VGA 锁，那么在日志系统（可能在中断上下文中调用）写入 VGA 时可能与 Shell（进程上下文）竞争锁资源，导致死锁或严重的性能下降。
+- 秒针：
+`sec_angle = (total_seconds % 60) * (π / 30) - π / 2`
+- 分针：
+`min_angle = ((total_seconds / 60) % 60) *(π / 30) + seconds * (π / 1800) - π / 2`
+（包含秒的分数偏移，使分针平滑移动）
+- 时针：
+`hour_angle = ((total_seconds / 3600) % 12) * (π / 6) + minutes * (π / 360) - π / 2`
+（包含分钟的分数偏移，使时针平滑移动）
 
-因此 `VgaConsole` 在初始化时保存了帧缓冲的裸指针、宽度、高度和步长，后续所有像素操作都直接通过这些副本进行，完全不经过 `VgaDriver` 的互斥锁。`VgaDriver` 仍保留互斥锁供 `clock_demo` 这类需要独占访问帧缓冲上部分的进程使用。
+每条指针由 `draw_thick_line` 从表盘中心绘制到对应外端点，其颜色和长度以及粗度具体见下方代码，
+```rs
+// 时针
+let hx = (cx as f64 + (radius - 42) as f64 * libm::cos(hour_angle)) as i32;
+let hy = (cy as f64 + (radius - 42) as f64 * libm::sin(hour_angle)) as i32;
+draw_thick_line(&vga, cx, cy, hx, hy, Color::WHITE, 3);
 
-=== 分屏模式下，如何确保时钟进程和文本控制台不会互相干扰？
+// 分针
+let mx = (cx as f64 + (radius - 26) as f64 * libm::cos(min_angle)) as i32;
+let my = (cy as f64 + (radius - 26) as f64 * libm::sin(min_angle)) as i32;
+draw_thick_line(&vga, cx, cy, mx, my, Color::new(150, 210, 255), 3);
 
-通过垂直分区约定：时钟进程只读写屏幕上方 `[0, clock_height)` 区域的像素，文本控制台只读写 `[separator_y, total_height)` 区域的像素。两个区域之间有 1 像素高的分隔线，互不重叠。
+// 秒针
+let sx = (cx as f64 + (radius - 4) as f64 * libm::cos(sec_angle)) as i32;
+let sy = (cy as f64 + (radius - 4) as f64 * libm::sin(sec_angle)) as i32;
+draw_thick_line(&vga, cx, cy, sx, sy, Color::new(255, 80, 40), 2);
+```
 
-由于两个区域的像素地址在帧缓冲中是不重叠的，即使两个"线程"同时写入（尽管实际上帧缓冲的字节级写入是原子的，不会有"撕裂"的像素），也不会产生冲突。
+其最终效果如下，
+#image("./images/clock.png")
 
-=== 如果 GOP 协议不可用（如纯串口模式），系统会如何表现？
+== 最终布局
 
-`get_gop_info()` 在获取协议失败时返回 `None`。内核在 `init()` 中检查 `boot_info.gop_info.is_some()`，如果为 `None` 则跳过 VGA 驱动的初始化。`kernel_main` 中同样检查后才创建时钟进程和初始化 VGA 控制台。因此系统可以优雅降级为纯串口模式，不影响核心功能的运行。
+`VgaConsole` 支持 `y_offset` 偏移参数，使其仅占用屏幕的下半部分。在分屏模式下：
+
++ 屏幕上半部分用于绘制加分项中的时钟
++ 屏幕下半部分用于文本控制台
+
+控制台进一步分为两部分：
++ Header 区：显示 YSOS ASCII 徽标，不可滚动
++ Body 区：Shell 交互 + 日志输出的可滚动区域
+
+初始化函数 `init_vga_console_for_shell()` 在 `crates/kernel/src/drivers/vga_text.rs` 中实现，返回时钟区域的高度（像素），供 `clock_demo` 进程进行时钟绘制。
+
+最终效果如下，使用 `make gui MODE=release DISPLAY_BACKEND=vnc` 命令进行运行，然后使用 RealVNC Viewer 连接 GUI，
+#image("./images/terminal.png")
+
+从而，我们成功实现了 shell 的 VGA 显示输出！
