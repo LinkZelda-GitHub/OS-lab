@@ -28,7 +28,7 @@
 
 === UEFI Graphics Output Protocol（GOP）
 
-UEFI 固件提供了一套标准的协议（Protocol）供 bootloader 使用，其中之一就是 Graphics Output Protocol（GOP）。GOP 可以为 bootloader 提供一个线性的帧缓冲（Linear Framebuffer），使得我们可以直接通过内存写入的方式控制屏幕上的每一个像素。
+UEFI 固件提供了一套标准的协议供 bootloader 使用，其中之一就是 Graphics Output Protocol（GOP）。GOP 可以为 bootloader 提供一个线性的帧缓冲，使得我们可以直接通过内存写入的方式控制屏幕上的每一个像素。
 
 GOP 协议提供了以下关键信息：
 
@@ -40,7 +40,7 @@ GOP 协议提供了以下关键信息：
 
 === `get_gop_info()` 函数的实现
 
-我们在 bootloader（`crates/boot/src/main.rs`）中添加了 `get_gop_info()` 函数，其实现如下：
+我们在 bootloader 中添加了 `get_gop_info()` 函数，其实现如下：
 
 ```rs
 /// Query UEFI Graphics Output Protocol for framebuffer information
